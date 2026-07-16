@@ -49,6 +49,16 @@ def load_courses():
 # Initial load on bootstrap
 load_courses()
 
+def safe_int(val):
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return -1
+
+def std_round(val):
+    # Provides standard rounding matching JavaScript Math.round()
+    return int(val + 0.5) if val >= 0 else int(val - 0.5)
+
 @app.get("/api/courses")
 def get_courses():
     # Dynamic reload on each request to make local developer testing instant
@@ -69,16 +79,25 @@ def get_courses():
         
     output = []
     for c_id, course in COURSES.items():
+        # Validate and match only elements in the active curriculum
+        valid_module_ids = {safe_int(m["id"]) for m in course["curriculum"]}
+        valid_sections = {"theory", "commands", "examples", "exercise", "insight"}
+        
+        completed_tuples = progress_by_course.get(c_id, set())
+        valid_completed_count = sum(
+            1 for m_id, s_id in completed_tuples 
+            if safe_int(m_id) in valid_module_ids and s_id in valid_sections
+        )
+        
         total_sections = len(course["curriculum"]) * 5
-        completed_count = len(progress_by_course.get(c_id, []))
-        percentage = int((completed_count / total_sections) * 100) if total_sections > 0 else 0
+        percentage = std_round((valid_completed_count / total_sections) * 100) if total_sections > 0 else 0
         
         output.append({
             "id": c_id,
             "title": course["title"],
             "description": course["description"],
             "total_modules": len(course["curriculum"]),
-            "completed_sections": completed_count,
+            "completed_sections": valid_completed_count,
             "total_sections": total_sections,
             "percentage": percentage
         })

@@ -1,6 +1,6 @@
-# Self-Paced Portal
+# Self-Paced Learning Portal
 
-A lightweight, self-hosted portal for self-paced study in DevOps, SRE, and software development. 
+A lightweight, self-hosted learning portal for self-paced study in DevOps, SRE, and software development. 
 
 ## Courses
 - Docker Certified Associate (DCA)
@@ -31,11 +31,12 @@ A lightweight, self-hosted portal for self-paced study in DevOps, SRE, and softw
 ```bash
 git clone git@github.com:s06a/self-paced-learning-portal.git
 cd self-paced-learning-portal
+chmod +x run.sh
 ```
 
 ### 2. Launch the Application
 ```bash
-python main.py
+bash run.sh
 ```
 
 ### 3. Access the Portal
