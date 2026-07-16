@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Paced Learning Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Geist', 'Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e4e4e7;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4d4d8;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #18181b;
+        }
+        .markdown-body h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #27272a;
+        }
+        .markdown-body p {
+            margin-bottom: 1rem;
+            line-height: 1.625;
+            color: #3f3f46;
+        }
+        .markdown-body ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .markdown-body ol {
+            list-style-type: decimal;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .markdown-body li {
+            margin-bottom: 0.35rem;
+            color: #3f3f46;
+        }
+        .markdown-body pre {
+            background-color: #09090b;
+            border: 1px solid #e4e4e7;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .markdown-body pre code {
+            background-color: transparent !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            border: none !important;
+            color: #f4f4f5 !important;
+            font-size: 0.8rem !important;
+        }
+        .markdown-body code {
+            background-color: #f4f4f5;
+            border: 1px solid #e4e4e7;
+            color: #18181b;
+            padding: 0.125rem 0.3rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body class="bg-zinc-50 text-zinc-900 min-h-screen flex flex-col antialiased overflow-hidden h-screen w-screen">
+
+    <!-- Screen 1: Course Selection Dashboard -->
+    <div id="course-selection-screen" class="flex-1 overflow-y-auto p-6 md:p-12 max-w-5xl mx-auto w-full flex flex-col justify-between h-full">
+        <div>
+            <!-- Branding Header -->
+            <div class="flex items-center gap-2 mb-10">
+                <div class="bg-zinc-900 text-white rounded p-1.5 flex items-center justify-center">
+                    <i data-lucide="layers" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-sm tracking-tight">Self-Paced Learning Portal</h1>
+                    <p class="text-[10px] text-zinc-500">Self-Paced Curriculum</p>
+                </div>
+            </div>
+
+            <!-- Dashboard Title Header -->
+            <div class="mb-8">
+                <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Available Tracks</h2>
+                <p class="text-xs text-zinc-500 mt-1">Select an engineering domain specialization to begin your lessons.</p>
+            </div>
+
+            <!-- Course Cards Grid -->
+            <div id="course-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+
+        <div class="mt-12 pt-6 border-t border-zinc-200 text-center text-[10px] text-zinc-400">
+            <span>Self-Paced Learning Portal</span>
+        </div>
+    </div>
+
+    <!-- Screen 2: Interactive Curriculum Workspace -->
+    <div id="workspace-screen" class="hidden flex-1 overflow-hidden h-full w-full flex">
+        
+        <!-- LEFT SIDEBAR -->
+        <aside class="w-80 h-full border-r border-zinc-200 bg-white flex flex-col justify-between shrink-0 overflow-hidden">
+            <div class="p-5 flex flex-col gap-4 overflow-hidden flex-1">
+                
+                <!-- Back navigation action -->
+                <button onclick="backToCourses()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-900 transition font-bold uppercase tracking-wider shrink-0">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Tracks
+                </button>
+
+                <!-- Course Title Header -->
+                <div class="shrink-0 border-b border-zinc-200 pb-3">
+                    <h2 class="text-xs font-bold text-zinc-900 uppercase tracking-tight" id="sidebar-course-title">Active Track</h2>
+                </div>
+
+                <!-- Course Progress -->
+                <div class="bg-zinc-50 rounded-lg p-4 border border-zinc-200 shrink-0">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-[10px] font-semibold text-zinc-600">Track Completion</span>
+                        <span id="progress-percentage" class="text-xs font-bold text-zinc-900">0%</span>
+                    </div>
+                    <div class="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
+                        <div id="progress-bar-fill" class="bg-zinc-900 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-3 text-[10px] text-zinc-500">
+                        <span id="progress-count">0 of 0 Passed</span>
+                    </div>
+                </div>
+
+                <!-- Search Input -->
+                <div class="relative shrink-0">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
+                    <input type="text" id="global-search" placeholder="Search lessons..."
+                           class="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition"
+                           onkeyup="handleSearch(event)">
+                </div>
+
+                <!-- Curriculum List Navigation -->
+                <nav class="flex flex-col gap-1 flex-1 overflow-hidden">
+                    <h2 class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1 shrink-0">Modules</h2>
+                    <div class="flex-1 overflow-y-auto pr-1">
+                        <ul id="curriculum-list" class="space-y-1">
+                            <!-- Loaded dynamically -->
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+
+            <!-- Footer indicator -->
+            <div class="p-3 border-t border-zinc-200 bg-zinc-50 text-[10px] text-zinc-400 text-center flex items-center justify-between shrink-0">
+                <span id="lbl-syllabus-standard">Syllabus Standard</span>
+                <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span> Engine Online</span>
+            </div>
+        </aside>
+
+        <!-- MAIN LAYOUT WRAPPER (Center View) -->
+        <main class="flex-1 h-full flex overflow-hidden bg-white">
+
+            <!-- MAIN CONTENT CONTAINER -->
+            <div class="flex-1 h-full flex flex-col overflow-hidden p-6 md:p-8 relative" id="content-viewport">
+                
+                <!-- View Placeholder -->
+                <div id="view-placeholder" class="m-auto text-center max-w-sm shrink-0">
+                    <i data-lucide="book-open" class="w-10 h-10 text-zinc-300 mx-auto mb-4"></i>
+                    <h3 class="text-sm font-semibold text-zinc-800">Select a Module</h3>
+                    <p class="text-xs text-zinc-500 mt-2 leading-relaxed">Select a curriculum module from the left navigation pane to begin. Each module contains core concepts, terminal command references, real-world examples, hands-on exercises, and certified preparation queries.</p>
+                </div>
+
+                <!-- Active Module View Layout Template -->
+                <div id="module-container" class="hidden flex-1 flex flex-col overflow-hidden max-w-4xl mx-auto w-full">
+                    
+                    <!-- Module Title Header -->
+                    <div class="border-b border-zinc-200 pb-3 mb-3 shrink-0 flex justify-between items-end">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[9px] uppercase bg-zinc-100 text-zinc-800 px-2 rounded-full font-semibold" id="lbl-module-tag">Module</span>
+                                <span id="lbl-read-status" class="hidden items-center gap-1 text-[10px] text-emerald-600 font-medium">
+                                    <i data-lucide="check" class="w-3.5 h-3.5"></i> All Passed
+                                </span>
+                            </div>
+                            <h2 class="text-lg font-bold tracking-tight text-zinc-900" id="module-title">Module Title</h2>
+                        </div>
+                        <!-- Font Size Adjusters -->
+                        <div class="flex items-center gap-1 bg-zinc-100 p-1 rounded-md border border-zinc-200 shrink-0 mb-0.5">
+                            <span class="text-[9px] font-bold text-zinc-500 uppercase px-1.5 select-none">Font</span>
+                            <button onclick="adjustFontSize(-1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Decrease font size">A-</button>
+                            <button onclick="adjustFontSize(1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Increase font size">A+</button>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Component -->
+                    <div class="flex border-b border-zinc-200 mb-4 gap-1 shrink-0 overflow-x-auto" role="tablist">
+                        <button onclick="switchTab('theory')" id="tab-theory" class="border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap">1. Core Concepts</button>
+                        <button onclick="switchTab('commands')" id="tab-commands" class="border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap">2. Command Reference</button>
+                        <button onclick="switchTab('examples')" id="tab-examples" class="border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap">3. Real-World Examples</button>
+                        <button onclick="switchTab('exercise')" id="tab-exercise" class="border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap">4. Hands-On Lab</button>
+                        <button onclick="switchTab('insight')" id="tab-insight" class="border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap">5. Interview Q&A</button>
+                    </div>
+
+                    <!-- Dynamic scrolling content container -->
+                    <div class="flex-1 overflow-y-auto pr-2 text-zinc-700 leading-relaxed text-xs mb-4 markdown-body" id="tab-pane-content">
+                        <!-- Markdown content output -->
+                    </div>
+
+                    <!-- Bottom Action Bar -->
+                    <div class="mt-auto border-t border-zinc-200 pt-4 flex items-center justify-between bg-white py-2 shrink-0">
+                        <button onclick="toggleCompleted()" id="btn-toggle-complete" 
+                                class="inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors border border-zinc-200 bg-white hover:bg-zinc-50 h-9 px-3.5 py-1.5 text-zinc-800">
+                            <i data-lucide="circle-dot" class="w-4 h-4"></i> Mark Section as Passed
+                        </button>
+                        
+                        <div class="flex gap-1.5">
+                            <button onclick="navigateModule(-1)" id="btn-prev-mod" class="px-3 py-1.5 border border-zinc-200 rounded-md text-[11px] hover:bg-zinc-50 text-zinc-700 font-semibold disabled:opacity-50">
+                                Previous
+                            </button>
+                            <button onclick="navigateModule(1)" id="btn-next-mod" class="px-3 py-1.5 bg-zinc-900 text-white rounded-md text-[11px] hover:bg-zinc-800 font-semibold">
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Search Results View -->
+                <div id="search-container" class="hidden flex-1 flex flex-col overflow-hidden max-w-4xl mx-auto w-full">
+                    <div class="border-b border-zinc-200 pb-3 mb-4 shrink-0">
+                        <h2 class="text-lg font-bold tracking-tight text-zinc-900">Search Results</h2>
+                        <p class="text-xs text-zinc-500 mt-1" id="search-count-label">0 matches identified</p>
+                    </div>
+                    <div id="search-results-list" class="flex-1 overflow-y-auto pr-2 space-y-3">
+                        <!-- Search matches loaded here -->
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Interface Script Logic -->
+    <script>
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            headerIds: false
+        });
+
+        const tabNames = {
+            theory: "1. Core Concepts",
+            commands: "2. Command Reference",
+            examples: "3. Real-World Examples",
+            exercise: "4. Hands-On Lab",
+            insight: "5. Interview Q&A"
+        };
+
+        const tabFriendlyNames = {
+            theory: "Core Concepts",
+            commands: "Command Reference",
+            examples: "Real-World Examples",
+            exercise: "Hands-On Lab",
+            insight: "Interview Q&A"
+        };
+
+        let state = {
+            courses: [],
+            currentCourseId: null,
+            currentModuleId: null,
+            currentTab: 'theory',
+            moduleData: null,
+            fontSize: 12,
+            activeView: 'courses' // 'courses', 'module', 'search'
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchCourses();
+            lucide.createIcons();
+        });
+
+        async function fetchCourses() {
+            try {
+                const res = await fetch("/api/courses");
+                state.courses = await res.json();
+                renderCourseGrid();
+            } catch (err) {
+                console.error("Error communicating with courses endpoint", err);
+            }
+        }
+
+        function renderCourseGrid() {
+            const grid = document.getElementById("course-grid");
+            grid.innerHTML = "";
+            
+            state.courses.forEach(c => {
+                const card = document.createElement("div");
+                card.className = "bg-white border border-zinc-200 hover:border-zinc-400 rounded-xl p-6 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between hover:shadow";
+                card.onclick = () => enterCourse(c.id);
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between gap-4 mb-4">
+                            <h3 class="font-bold text-sm text-zinc-950">${escapeHTML(c.title)}</h3>
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider shrink-0 bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded-full">${c.total_modules} Modules</span>
+                        </div>
+                        <p class="text-xs text-zinc-600 mb-6 leading-relaxed">${escapeHTML(c.description)}</p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] font-semibold text-zinc-500">Progress</span>
+                            <span class="text-xs font-bold text-zinc-900">${c.percentage}%</span>
+                        </div>
+                        <div class="w-full bg-zinc-100 h-1.5 rounded-full overflow-hidden border border-zinc-200/40">
+                            <div class="bg-zinc-900 h-full transition-all duration-300" style="width: ${c.percentage}%"></div>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between text-zinc-500 text-[10px]">
+                            <span>${c.completed_sections} of ${c.total_sections} Sections Passed</span>
+                            <span class="font-bold text-zinc-900 inline-flex items-center gap-1 hover:underline">
+                                Open Track <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                            </span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        async function enterCourse(courseId) {
+            state.currentCourseId = courseId;
+            state.activeView = 'module';
+            state.currentTab = 'theory';
+            state.currentModuleId = null;
+            
+            document.getElementById("course-selection-screen").classList.add("hidden");
+            document.getElementById("workspace-screen").classList.remove("hidden");
+            document.getElementById("view-placeholder").classList.remove("hidden");
+            document.getElementById("module-container").classList.add("hidden");
+            document.getElementById("search-container").classList.add("hidden");
+
+            const course = state.courses.find(c => c.id === courseId);
+            if (course) {
+                document.getElementById("sidebar-course-title").textContent = course.title;
+                document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
+            }
+
+            await fetchCurriculum();
+        }
+
+        function backToCourses() {
+            state.activeView = 'courses';
+            state.currentCourseId = null;
+            state.currentModuleId = null;
+            document.getElementById("global-search").value = "";
+            document.getElementById("workspace-screen").classList.add("hidden");
+            document.getElementById("course-selection-screen").classList.remove("hidden");
+            fetchCourses();
+        }
+
+        async function fetchCurriculum() {
+            if (!state.currentCourseId) return;
+            try {
+                const res = await fetch(`/api/courses/${state.currentCourseId}/curriculum`);
+                const modules = await res.json();
+                renderCurriculumList(modules);
+                calculateProgress(modules);
+            } catch (err) {
+                console.error("Error communicating with curriculum endpoint", err);
+            }
+        }
+
+        function calculateProgress(modules) {
+            const totalModules = modules.length;
+            const totalSections = totalModules * 5;
+            let completedSections = 0;
+            modules.forEach(m => {
+                if (m.completed_sections) {
+                    completedSections += m.completed_sections.length;
+                }
+            });
+            const percentage = totalSections > 0 ? Math.round((completedSections / totalSections) * 100) : 0;
+            
+            document.getElementById("progress-percentage").textContent = `${percentage}%`;
+            document.getElementById("progress-bar-fill").style.width = `${percentage}%`;
+            document.getElementById("progress-count").textContent = `${completedSections} of ${totalSections} Passed`;
+        }
+
+        function renderCurriculumList(modules) {
+            const list = document.getElementById("curriculum-list");
+            list.innerHTML = "";
+            modules.forEach(m => {
+                const li = document.createElement("li");
+                const isActive = m.id === state.currentModuleId && state.activeView === 'module';
+                const buttonClass = isActive 
+                    ? "w-full text-left flex items-center justify-between px-3 py-1.5 text-xs rounded-md bg-zinc-100 text-zinc-900 font-semibold border border-zinc-200/50" 
+                    : "w-full text-left flex items-center justify-between px-3 py-1.5 text-xs rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors border border-transparent";
+                
+                const completedCount = m.completed_sections ? m.completed_sections.length : 0;
+                const isAllCompleted = completedCount === 5;
+                
+                const progressIndicator = isAllCompleted 
+                    ? `<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>` 
+                    : `<span class="text-[9px] font-bold text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded shrink-0">${completedCount}/5</span>`;
+
+                li.innerHTML = `
+                    <button onclick="loadModule(${m.id})" class="${buttonClass}">
+                        <span class="truncate pr-2">${escapeHTML(m.title)}</span>
+                        ${progressIndicator}
+                    </button>
+                `;
+                list.appendChild(li);
+            });
+            lucide.createIcons();
+        }
+
+        async function loadModule(id) {
+            state.currentModuleId = id;
+            state.activeView = 'module';
+            
+            document.getElementById("view-placeholder").classList.add("hidden");
+            document.getElementById("search-container").classList.add("hidden");
+            document.getElementById("module-container").classList.remove("hidden");
+
+            try {
+                const res = await fetch(`/api/courses/${state.currentCourseId}/modules/${id}`);
+                const data = await res.json();
+                state.moduleData = data;
+                
+                document.getElementById("module-title").textContent = data.title;
+                document.getElementById("lbl-module-tag").textContent = `Module ${data.id}`;
+                
+                const readLabel = document.getElementById("lbl-read-status");
+                const isAllCompleted = data.completed_sections.length === 5;
+                if (isAllCompleted) {
+                    readLabel.classList.remove("hidden");
+                    readLabel.classList.add("inline-flex");
+                } else {
+                    readLabel.classList.add("hidden");
+                    readLabel.classList.remove("inline-flex");
+                }
+
+                switchTab(state.currentTab);
+                applyFontSize();
+
+                const course = state.courses.find(c => c.id === state.currentCourseId);
+                const totalModulesCount = course ? course.total_modules : 0;
+
+                document.getElementById("btn-prev-mod").disabled = (id <= 1);
+                document.getElementById("btn-next-mod").disabled = (id >= totalModulesCount);
+
+                const curricRes = await fetch(`/api/courses/${state.currentCourseId}/curriculum`);
+                const modules = await curricRes.json();
+                renderCurriculumList(modules);
+                calculateProgress(modules);
+
+            } catch (err) {
+                console.error("Error executing module pull", err);
+            }
+        }
+
+        async function toggleCompleted() {
+            if (!state.currentCourseId || !state.currentModuleId || !state.currentTab) return;
+            try {
+                const res = await fetch(`/api/courses/${state.currentCourseId}/modules/${state.currentModuleId}/toggle-progress?section=${state.currentTab}`, {
+                    method: "POST"
+                });
+                const response = await res.json();
+                
+                await loadModule(state.currentModuleId);
+            } catch (err) {
+                console.error("Error toggling completion", err);
+            }
+        }
+
+        function switchTab(tab) {
+            state.currentTab = tab;
+            const tabs = ['theory', 'commands', 'examples', 'exercise', 'insight'];
+            
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const isCompleted = state.moduleData && state.moduleData.completed_sections.includes(t);
+                const checkSuffix = isCompleted ? " ✓" : "";
+
+                if (t === tab) {
+                    btn.className = "border-zinc-900 text-zinc-900 border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap";
+                } else {
+                    btn.className = "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap";
+                }
+                btn.textContent = `${tabNames[t]}${checkSuffix}`;
+            });
+
+            if (state.moduleData) {
+                let markdownContent = state.moduleData[tab];
+                document.getElementById("tab-pane-content").innerHTML = marked.parse(markdownContent);
+                
+                const isSectionCompleted = state.moduleData.completed_sections.includes(tab);
+                const sectionName = tabFriendlyNames[tab];
+                const btn = document.getElementById("btn-toggle-complete");
+                if (isSectionCompleted) {
+                    btn.innerHTML = `<i data-lucide="check-square" class="w-4 h-4 text-emerald-600"></i> Passed ${sectionName}`;
+                    btn.className = "inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors border border-zinc-200 bg-emerald-50 text-emerald-700 h-9 px-3.5 py-1.5 hover:bg-emerald-100";
+                } else {
+                    btn.innerHTML = `<i data-lucide="circle-dot" class="w-4 h-4"></i> Mark ${sectionName} as Passed`;
+                    btn.className = "inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors border border-zinc-200 bg-white hover:bg-zinc-50 h-9 px-3.5 py-1.5 text-zinc-800";
+                }
+                lucide.createIcons();
+            }
+        }
+
+        function adjustFontSize(diff) {
+            state.fontSize = Math.min(24, Math.max(10, state.fontSize + diff));
+            applyFontSize();
+        }
+
+        // Font Adjustment logic
+        function applyFontSize() {
+            const pane = document.getElementById("tab-pane-content");
+            if (pane) {
+                pane.style.fontSize = `${state.fontSize}px`;
+            }
+        }
+
+        function navigateModule(direction) {
+            const nextId = state.currentModuleId + direction;
+            loadModule(nextId);
+        }
+
+        async function handleSearch(e) {
+            const val = e.target.value.trim();
+            if (val.length < 2) {
+                if (val.length === 0 && state.activeView === 'search') {
+                    resetToHome();
+                }
+                return;
+            }
+
+            state.activeView = 'search';
+            document.getElementById("view-placeholder").classList.add("hidden");
+            document.getElementById("module-container").classList.add("hidden");
+            document.getElementById("search-container").classList.remove("hidden");
+
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(val)}`);
+                const data = await res.json();
+                renderSearchResults(data.results, val);
+            } catch (err) {
+                console.error("Error searching records", err);
+            }
+        }
+
+        function renderSearchResults(results, query) {
+            const container = document.getElementById("search-results-list");
+            const label = document.getElementById("search-count-label");
+            container.innerHTML = "";
+            label.textContent = `${results.length} matches identified for "${query}"`;
+
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center border border-dashed rounded-lg border-zinc-200">
+                        <p class="text-xs text-zinc-500">No matching text records detected in curriculum.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            results.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "border border-zinc-200 bg-white rounded-lg p-4 hover:border-zinc-400 transition cursor-pointer";
+                div.onclick = () => {
+                    clickSearchResult(item.course_id, item.id);
+                };
+
+                let matchSnippets = "";
+                item.matches.forEach(m => {
+                    matchSnippets += `
+                        <div class="mt-1.5 text-[11px] bg-zinc-50 p-2 rounded border border-zinc-100 font-mono text-zinc-600">
+                            <span class="font-bold text-zinc-850 text-[9px] uppercase block mb-0.5">${m.section}</span>
+                            ${escapeHTML(m.snippet)}
+                        </div>
+                    `;
+                });
+
+                div.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[9px] text-zinc-400 uppercase font-bold tracking-wide">${escapeHTML(item.course_title)}</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-zinc-400"></i>
+                    </div>
+                    <h4 class="text-xs font-semibold text-zinc-900">${escapeHTML(item.title)}</h4>
+                    ${matchSnippets}
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        async function clickSearchResult(courseId, moduleId) {
+            // Instantly transition course scope and open specific target modules
+            await enterCourse(courseId);
+            await loadModule(moduleId);
+            document.getElementById("global-search").value = "";
+        }
+
+        function resetToHome() {
+            state.activeView = 'module';
+            state.currentModuleId = null;
+            document.getElementById("module-container").classList.add("hidden");
+            document.getElementById("search-container").classList.add("hidden");
+            document.getElementById("view-placeholder").classList.remove("hidden");
+            fetchCurriculum();
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
