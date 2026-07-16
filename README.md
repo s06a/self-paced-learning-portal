@@ -2,6 +2,11 @@
 
 A lightweight, self-hosted learning portal for self-paced study in DevOps, SRE, and software development. 
 
+## Courses
+- Docker Certified Associate (DCA)
+- Kubernetes Administrator (CKA) (Not Completed)
+- ...
+
 ## Visuals
 
 ### Course Selection Dashboard
