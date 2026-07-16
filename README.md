@@ -9,12 +9,10 @@ The application is completely self-contained. When you run the launcher script, 
 ## Visuals
 
 ### Course Selection Dashboard
-*Select a specialization track from the dynamic home dashboard.*
 
 ![Course Selection Dashboard](docs/images/dashboard.png)
 
 ### Interactive Workspace
-*Track progress section-by-section, adjust font sizes, and view interview preparation questions.*
 
 ![Interactive Workspace](docs/images/workspace.png)
 
@@ -35,21 +33,18 @@ The application is completely self-contained. When you run the launcher script, 
 * **Python 3.8+** must be installed on your system.
 
 ### 1. Clone the Repository
-Clone this repository to your local machine:
 ```bash
-git clone <YOUR_GITHUB_REPO_URL>
+git clone git@github.com:s06a/self-paced-learning-portal.git
 cd self-paced-learning-portal
 ```
 
 ### 2. Launch the Application
-Run the master bootstrapper script. This will automatically set up the virtual environment, resolve dependencies, and start the local server:
 ```bash
 python main.py
 ```
 
 ### 3. Access the Portal
-Once the terminal displays that the server is online, open your web browser and navigate to:
-```text
+x```text
 http://127.0.0.1:8000
 ```
 
