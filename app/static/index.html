@@ -136,19 +136,41 @@
             font-family: monospace !important;
             font-size: 0.85em !important; /* Scales automatically */
         }
-        .markdown-body mark {
+        .markdown-body mark.markdown-highlight {
             background-color: #fef08a !important; /* Soft yellow highlight */
             color: #1c1917 !important;
             padding: 0.1rem 0.25rem !important;
             border-radius: 0.125rem !important;
             font-weight: 500 !important;
         }
+        mark.note-highlight-only {
+            background-color: #fef08a !important;
+            border-bottom: 1.5px solid #eab308 !important;
+            color: #1c1917 !important;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        mark.note-highlight-only:hover {
+            background-color: #fde047 !important;
+        }
+        mark.note-highlight-with-text {
+            background-color: #fcd34d !important; /* Richer amber-300 */
+            border-bottom: 2px dashed #d97706 !important; /* amber-600 */
+            color: #1c1917 !important;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        mark.note-highlight-with-text:hover {
+            background-color: #fbbf24 !important; /* amber-400 */
+        }
     </style>
 </head>
-<body class="bg-zinc-50 text-zinc-900 min-h-screen flex flex-col antialiased overflow-hidden h-screen w-screen">
+<body class="bg-zinc-50 text-zinc-900 min-h-screen flex flex-row antialiased overflow-hidden h-screen w-screen">
 
-    <!-- Screen 1: Course Selection Dashboard -->
-    <div id="course-selection-screen" class="flex-1 p-6 md:p-12 max-w-5xl mx-auto w-full flex flex-col justify-between h-full overflow-hidden">
+    <!-- MAIN VIEW CONTAINER -->
+    <div class="flex-1 flex flex-col overflow-hidden h-full min-w-0">
+        <!-- Screen 1: Course Selection Dashboard -->
+        <div id="course-selection-screen" class="flex-1 p-6 md:p-12 max-w-5xl mx-auto w-full flex flex-col justify-between h-full overflow-hidden">
         
         <!-- Branding Header and Pomodoro Stats -->
         <div class="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-6 shrink-0">
@@ -193,14 +215,20 @@
                        oninput="filterAndSortCourses()">
             </div>
 
-            <!-- Sort dropdown -->
-            <div class="flex items-center gap-2 shrink-0">
-                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Sort by</span>
-                <select id="course-sort-select" onchange="filterAndSortCourses()"
-                        class="bg-white border border-zinc-200 rounded-md px-2 py-1 text-xs text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
-                    <option value="name">Name (A-Z)</option>
-                    <option value="progress">Progress (High to Low)</option>
-                </select>
+            <!-- Sort and Notes Actions -->
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Sort by</span>
+                    <select id="course-sort-select" onchange="filterAndSortCourses()"
+                            class="bg-white border border-zinc-200 rounded-md px-2 py-1 text-xs text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
+                        <option value="name">Name (A-Z)</option>
+                        <option value="progress">Progress (High to Low)</option>
+                    </select>
+                </div>
+                <button onclick="enterNotesManager()" class="bg-zinc-950 text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition flex items-center gap-1.5 shrink-0 shadow-sm">
+                    <i data-lucide="sticky-note" class="w-3.5 h-3.5"></i>
+                    <span>Notes Manager</span>
+                </button>
             </div>
         </div>
 
@@ -276,10 +304,16 @@
                 </nav>
 
                 <!-- My Study Notes Navigation -->
-                <button onclick="toggleNotesSidebar()" class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-xs rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors border border-transparent shrink-0 mt-1">
-                    <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-zinc-500"></i>
-                    <span>Study Notes & Highlights</span>
-                </button>
+                <div class="flex flex-col gap-1 shrink-0 mt-1">
+                    <button id="btn-workspace-toggle-notes" onclick="toggleNotesSidebar()" class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-xs rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors border border-transparent">
+                        <i data-lucide="sidebar" class="w-3.5 h-3.5 text-zinc-500"></i>
+                        <span>Toggle Notes Sidebar</span>
+                    </button>
+                    <button onclick="enterNotesManager()" class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-xs rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors border border-transparent">
+                        <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-zinc-500"></i>
+                        <span>All Notes Manager</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Footer indicator -->
@@ -373,9 +407,55 @@
             </div>
 
         </main>
+    </div>
 
-        <!-- RIGHT SIDEBAR (Study Notes) -->
-        <aside id="notes-sidebar" class="w-80 h-full border-l border-zinc-200 bg-white flex flex-col justify-between shrink-0 overflow-hidden relative transition-all duration-300">
+    <!-- Screen 3: Dedicated Note Taking Page -->
+    <div id="notes-manager-screen" class="hidden flex-1 overflow-hidden h-full w-full flex flex-col p-6 md:p-8 max-w-5xl mx-auto">
+        <!-- Header section -->
+        <div class="flex items-center justify-between gap-4 border-b border-zinc-200 pb-4 mb-4 shrink-0">
+            <div>
+                <button onclick="backFromNotes()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-900 transition font-bold uppercase tracking-wider mb-2">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back
+                </button>
+                <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Study Notes Manager</h2>
+                <p class="text-xs text-zinc-500 mt-1">Review, search, and manage all your notes and highlighted content across all tracks.</p>
+            </div>
+            <button onclick="exportNotesMarkdown()" class="bg-zinc-950 text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition flex items-center gap-1.5 shrink-0 shadow-sm">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Notes (MD)
+            </button>
+        </div>
+
+        <!-- Filters & Controls Row -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
+            <!-- Search notes filter -->
+            <div class="relative flex-1 max-w-sm">
+                <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
+                <input type="text" id="notes-filter-search" placeholder="Search across all notes..."
+                       class="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition"
+                       oninput="renderNotesList()">
+            </div>
+
+            <!-- Course select dropdown filter -->
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Course Filter</span>
+                <select id="notes-course-filter" onchange="renderNotesList()"
+                        class="bg-white border border-zinc-200 rounded-md px-2 py-1 text-xs text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
+                    <option value="all">All Courses</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Note Cards Grid (Scrollable) -->
+        <div class="flex-1 overflow-y-auto pr-1">
+            <div id="notes-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Note cards loaded here dynamically -->
+            </div>
+        </div>
+    </div>
+</div> <!-- Closing MAIN VIEW CONTAINER -->
+
+<!-- RIGHT SIDEBAR (Study Notes) -->
+<aside id="notes-sidebar" class="w-80 h-full border-l border-zinc-200 bg-white flex flex-col justify-between shrink-0 overflow-hidden relative transition-all duration-300">
             <div class="p-5 flex flex-col gap-3 overflow-hidden flex-1 font-sans">
                 
                 <!-- Sidebar Header -->
@@ -528,6 +608,7 @@
         document.addEventListener("DOMContentLoaded", () => {
             fetchCourses();
             lucide.createIcons();
+            syncNotesSidebarState();
             
             // Text selection listeners for highlights
             const pane = document.getElementById("tab-pane-content");
@@ -648,16 +729,8 @@
 
             await fetchCurriculum();
             
-            // Sync notes sidebar state indicator
-            const sidebar = document.getElementById("notes-sidebar");
-            const mainButton = document.getElementById("btn-toggle-notes-sidebar");
-            if (sidebar && !sidebar.classList.contains("hidden")) {
-                if (mainButton) {
-                    mainButton.classList.add("bg-white", "shadow-sm");
-                    mainButton.classList.remove("hover:bg-white");
-                }
-            }
-            await fetchNotes();
+            syncNotesSidebarState();
+            await fetchAndRenderNotes();
         }
 
         function backToCourses() {
@@ -674,6 +747,7 @@
             document.getElementById("workspace-screen").classList.add("hidden");
             document.getElementById("course-selection-screen").classList.remove("hidden");
             fetchCourses();
+            syncNotesSidebarState();
         }
 
         async function fetchCurriculum() {
@@ -771,7 +845,7 @@
                 const modules = await curricRes.json();
                 renderCurriculumList(modules);
                 calculateProgress(modules);
-                await fetchNotes();
+                await fetchAndRenderNotes();
 
             } catch (err) {
                 console.error("Error executing module pull", err);
@@ -1229,7 +1303,8 @@
                     const notes = await res.json();
                     const container = document.getElementById("tab-pane-content");
                     notes.forEach(note => {
-                        highlightTextInElement(container, note.selected_text, note.id);
+                        const hasNoteText = !!(note.note_text && note.note_text.trim());
+                        highlightTextInElement(container, note.selected_text, note.id, hasNoteText);
                     });
                 }
             } catch (err) {
@@ -1237,31 +1312,76 @@
             }
         }
 
-        function highlightTextInElement(element, text, noteId) {
+        function highlightTextInElement(element, text, noteId, hasNoteText) {
             if (!text) return;
-            const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp("(" + escapedText + ")", "gi");
             
             function walk(node) {
                 if (node.nodeType === 3) {
                     const textContent = node.nodeValue;
-                    if (regex.test(textContent)) {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = textContent.replace(regex, `<mark class="bg-amber-100 border-b border-amber-300 text-zinc-900 px-0.5 rounded cursor-pointer hover:bg-amber-200 transition-colors duration-150" data-note-id="${noteId}" onclick="showNoteTooltip(event, ${noteId})">$1</mark>`);
-                        
+                    const lowerText = textContent.toLowerCase();
+                    const lowerSearch = text.toLowerCase();
+                    if (lowerText.includes(lowerSearch)) {
                         const parent = node.parentNode;
-                        while (tempDiv.firstChild) {
-                            parent.insertBefore(tempDiv.firstChild, node);
+                        if (parent && parent.tagName !== 'MARK' && parent.tagName !== 'SCRIPT' && parent.tagName !== 'STYLE' && parent.tagName !== 'PRE' && parent.tagName !== 'CODE') {
+                            const fragments = document.createDocumentFragment();
+                            let lastIdx = 0;
+                            let idx = lowerText.indexOf(lowerSearch);
+                            while (idx !== -1) {
+                                if (idx > lastIdx) {
+                                    fragments.appendChild(document.createTextNode(textContent.substring(lastIdx, idx)));
+                                }
+                                const mark = document.createElement('mark');
+                                mark.className = hasNoteText
+                                    ? "note-highlight-with-text rounded px-0.5 transition-colors duration-150"
+                                    : "note-highlight-only rounded px-0.5 transition-colors duration-150";
+                                mark.setAttribute('data-note-id', noteId);
+                                mark.onclick = (event) => showNoteTooltip(event, noteId);
+                                mark.appendChild(document.createTextNode(textContent.substring(idx, idx + text.length)));
+                                fragments.appendChild(mark);
+                                lastIdx = idx + text.length;
+                                idx = lowerText.indexOf(lowerSearch, lastIdx);
+                            }
+                            if (lastIdx < textContent.length) {
+                                fragments.appendChild(document.createTextNode(textContent.substring(lastIdx)));
+                            }
+                            parent.replaceChild(fragments, node);
                         }
-                        parent.removeChild(node);
                     }
-                } else if (node.nodeType === 1 && node.childNodes && !['SCRIPT', 'STYLE', 'BUTTON', 'PRE', 'A'].includes(node.nodeName)) {
-                    for (let i = node.childNodes.length - 1; i >= 0; i--) {
-                        walk(node.childNodes[i]);
+                } else if (node.nodeType === 1 && node.childNodes) {
+                    const tag = node.tagName.toUpperCase();
+                    if (tag !== 'BUTTON' && tag !== 'PRE' && tag !== 'CODE' && tag !== 'SCRIPT' && tag !== 'STYLE' && tag !== 'MARK') {
+                        const children = Array.from(node.childNodes);
+                        children.forEach(child => walk(child));
                     }
                 }
             }
             walk(element);
+        }
+
+        function syncNotesSidebarState() {
+            const sidebar = document.getElementById("notes-sidebar");
+            const mainButton = document.getElementById("btn-toggle-notes-sidebar");
+            if (!sidebar) return;
+            
+            if (state.activeView === 'courses' || state.activeView === 'search') {
+                sidebar.classList.add("hidden");
+                if (mainButton) {
+                    mainButton.classList.remove("bg-white", "shadow-sm");
+                    mainButton.classList.add("hover:bg-white");
+                }
+            } else {
+                if (sidebar.classList.contains("hidden")) {
+                    if (mainButton) {
+                        mainButton.classList.remove("bg-white", "shadow-sm");
+                        mainButton.classList.add("hover:bg-white");
+                    }
+                } else {
+                    if (mainButton) {
+                        mainButton.classList.add("bg-white", "shadow-sm");
+                        mainButton.classList.remove("hover:bg-white");
+                    }
+                }
+            }
         }
 
         async function showNoteTooltip(event, noteId) {

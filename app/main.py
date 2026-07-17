@@ -262,30 +262,8 @@ def log_pomodoro(log: PomodoroLog):
     conn.close()
     return {"status": "success", "date": log.date, "duration": log.duration}
 
-class NotesSave(BaseModel):
-    notes: str
-
-@app.get("/api/courses/{course_id}/modules/{module_id}/notes")
-def get_notes(course_id: str, module_id: int):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT notes_text FROM notes WHERE course_id = ? AND module_id = ?", (course_id, module_id))
-    row = cursor.fetchone()
-    conn.close()
-    return {"notes": row["notes_text"] if row else ""}
-
-@app.post("/api/courses/{course_id}/modules/{module_id}/notes")
-def save_notes(course_id: str, module_id: int, payload: NotesSave):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO notes (course_id, module_id, notes_text)
-        VALUES (?, ?, ?)
-        ON CONFLICT(course_id, module_id) DO UPDATE SET notes_text = excluded.notes_text
-    """, (course_id, module_id, payload.notes))
-    conn.commit()
-    conn.close()
-    return {"status": "success"}
+# Redundant course module notes routes removed to avoid column mismatches and endpoint signature collisions.
+# The unified /api/notes endpoint is used instead.
 
 @app.get("/api/pomodoro/stats")
 def get_pomodoro_stats(dates: str = Query(...)):
