@@ -924,7 +924,7 @@
             lucide.createIcons();
         }
 
-        async function loadModule(id) {
+        async function loadModule(id, preserveScroll = false) {
             state.currentModuleId = id;
             state.activeView = 'module';
             
@@ -954,7 +954,7 @@
                     readLabel.classList.remove("inline-flex");
                 }
 
-                switchTab(state.currentTab);
+                switchTab(state.currentTab, preserveScroll);
                 applyFontSize();
 
                 const course = state.courses.find(c => c.id === state.currentCourseId);
@@ -982,7 +982,7 @@
                 });
                 const response = await res.json();
                 
-                await loadModule(state.currentModuleId);
+                await loadModule(state.currentModuleId, true);
             } catch (err) {
                 console.error("Error toggling completion", err);
             }
@@ -1021,7 +1021,7 @@
             lucide.createIcons();
         }
 
-        function switchTab(tab) {
+        function switchTab(tab, preserveScroll = false) {
             state.currentTab = tab;
             
             // Track last visited tab
@@ -1047,8 +1047,15 @@
             if (state.moduleData) {
                 let markdownContent = state.moduleData[tab];
                 const pane = document.getElementById("tab-pane-content");
+                const savedScrollTop = pane ? pane.scrollTop : 0;
+                
                 pane.innerHTML = renderMarkdown(markdownContent);
-                pane.scrollTop = 0;
+                
+                if (preserveScroll && pane) {
+                    pane.scrollTop = savedScrollTop;
+                } else if (pane) {
+                    pane.scrollTop = 0;
+                }
                 
                 // Process and attach the Copy Button to all rendered code blocks
                 addCopyBlocksToCodeBlocks();
@@ -1057,6 +1064,9 @@
                 applyHighlightsForCurrentSection().then(() => {
                     scrollToPendingNote();
                     renderSidebarNotes();
+                    if (preserveScroll && pane) {
+                        pane.scrollTop = savedScrollTop;
+                    }
                 });
                 
                 const isSectionCompleted = state.moduleData.completed_sections.includes(tab);
@@ -1475,7 +1485,7 @@
                     window.getSelection().removeAllRanges();
                     await fetchAndRenderNotes();
                     if (state.currentModuleId) {
-                        await loadModule(state.currentModuleId);
+                        await loadModule(state.currentModuleId, true);
                     }
                 }
             } catch (err) {
@@ -1792,7 +1802,7 @@
                     
                     // 2. If viewing a module, reload module to clear highlights
                     if (state.currentModuleId && state.activeView === 'module') {
-                        await loadModule(state.currentModuleId);
+                        await loadModule(state.currentModuleId, true);
                     }
                     
                     // 3. Fire optional callback
