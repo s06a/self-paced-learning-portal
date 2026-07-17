@@ -149,19 +149,12 @@
             color: #1c1917 !important;
             cursor: pointer;
             transition: background-color 0.15s ease;
+            font-family: inherit !important;
+            font-size: inherit !important;
+            font-weight: inherit !important;
         }
         mark.note-highlight-only:hover {
             background-color: #fde047 !important;
-        }
-        mark.note-highlight-with-text {
-            background-color: #fcd34d !important; /* Richer amber-300 */
-            border-bottom: 2px dashed #d97706 !important; /* amber-600 */
-            color: #1c1917 !important;
-            cursor: pointer;
-            transition: background-color 0.15s ease;
-        }
-        mark.note-highlight-with-text:hover {
-            background-color: #fbbf24 !important; /* amber-400 */
         }
     </style>
 </head>
@@ -317,13 +310,6 @@
             <!-- MAIN CONTENT CONTAINER -->
             <div class="flex-1 h-full flex flex-col overflow-hidden p-6 md:p-8 relative" id="content-viewport">
                 
-                <!-- View Placeholder -->
-                <div id="view-placeholder" class="m-auto text-center max-w-sm shrink-0">
-                    <i data-lucide="book-open" class="w-10 h-10 text-zinc-300 mx-auto mb-4"></i>
-                    <h3 class="text-sm font-semibold text-zinc-800">Select a Module</h3>
-                    <p class="text-xs text-zinc-500 mt-2 leading-relaxed">Select a curriculum module from the left navigation pane to begin. Each module contains core concepts, terminal command references, real-world examples, hands-on exercises, and certified preparation queries.</p>
-                </div>
-
                 <!-- Active Module View Layout Template -->
                 <div id="module-container" class="hidden flex-1 flex flex-col overflow-hidden max-w-4xl mx-auto w-full">
                     
@@ -452,8 +438,9 @@
                         <i data-lucide="edit-3" class="w-4 h-4 text-zinc-700"></i>
                         <h3 class="text-xs font-bold text-zinc-900 uppercase tracking-tight">Study Notes</h3>
                     </div>
-                    <button onclick="enterNotesManager()" class="p-1 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition" title="Go to Notes Manager">
-                        <i data-lucide="sticky-note" class="w-4 h-4"></i>
+                    <button onclick="enterNotesManager()" class="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 hover:text-zinc-900 rounded text-[10px] font-bold transition flex items-center gap-1">
+                        <i data-lucide="sticky-note" class="w-3 h-3"></i>
+                        <span>Go to Notes Manager</span>
                     </button>
                 </div>
 
@@ -463,11 +450,11 @@
                         <i data-lucide="search" class="absolute left-2.5 top-2 w-3 h-3 text-zinc-400"></i>
                         <input type="text" id="sidebar-notes-search" placeholder="Search notes..."
                                class="w-full pl-8 pr-3 py-1 text-[11px] bg-zinc-50 border border-zinc-200 rounded focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900"
-                               oninput="renderSidebarNotes()">
+                               oninput="sidebarNotesLimit = 5; renderSidebarNotes()">
                     </div>
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider select-none">Scope</span>
-                        <select id="sidebar-notes-scope" onchange="renderSidebarNotes()"
+                        <select id="sidebar-notes-scope" onchange="sidebarNotesLimit = 5; renderSidebarNotes()"
                                 class="bg-zinc-50 border border-zinc-200 rounded px-1.5 py-0.5 text-[10px] text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
                             <option value="module" selected>Active Module</option>
                             <option value="course">Active Track</option>
@@ -494,21 +481,18 @@
 
     <!-- Floating Text Selection Tooltip -->
     <div id="text-selector-tooltip" class="hidden absolute z-50 bg-zinc-950 text-white text-[10px] rounded-md shadow-lg border border-zinc-800 flex items-center">
-        <button onclick="openAddNoteModal()" class="px-2.5 py-1.5 flex items-center gap-1 hover:bg-zinc-800 text-zinc-100 transition rounded-md font-bold uppercase tracking-wider">
+        <button onclick="addHighlightDirectly()" class="px-2.5 py-1.5 flex items-center gap-1 hover:bg-zinc-800 text-zinc-100 transition rounded-md font-bold uppercase tracking-wider">
             <i data-lucide="highlighter" class="w-3.5 h-3.5 text-amber-400"></i>
-            <span>Highlight / Add Note</span>
+            <span>Highlight</span>
         </button>
     </div>
 
     <!-- Floating Note Tooltip -->
     <div id="note-view-tooltip" class="hidden absolute z-50 bg-zinc-950 text-white text-xs rounded-lg shadow-lg border border-zinc-800 p-3 max-w-xs flex flex-col gap-2">
         <div class="flex items-center justify-between gap-4 border-b border-zinc-800 pb-1.5 shrink-0">
-            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Note</span>
+            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Highlight</span>
             <div class="flex items-center gap-1.5">
-                <button onclick="editNoteFromTooltip()" class="text-zinc-400 hover:text-white transition" title="Edit Note">
-                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                </button>
-                <button onclick="deleteNoteFromTooltip()" class="text-rose-400 hover:text-rose-600 transition" title="Delete Note/Highlight">
+                <button onclick="deleteNoteFromTooltip()" class="text-rose-400 hover:text-rose-600 transition" title="Delete Highlight">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
                 <button onclick="hideNoteTooltip()" class="text-zinc-400 hover:text-white transition">
@@ -516,42 +500,8 @@
                 </button>
             </div>
         </div>
-        <p id="note-tooltip-text" class="text-zinc-300 leading-normal text-[11px]"></p>
+        <p id="note-tooltip-text" class="text-zinc-300 leading-normal text-[11px] max-h-24 overflow-y-auto"></p>
         <span id="note-tooltip-date" class="text-[9px] text-zinc-500 text-right font-mono"></span>
-    </div>
-
-    <!-- Note Editor Modal -->
-    <div id="note-editor-modal" class="hidden fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white border border-zinc-200 rounded-xl max-w-md w-full p-5 shadow-xl flex flex-col gap-4">
-            <div class="flex justify-between items-start">
-                <h3 class="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                    <i data-lucide="sticky-note" class="w-4 h-4 text-zinc-500"></i> Create Note & Highlight
-                </h3>
-                <button onclick="closeNoteModal()" class="text-zinc-400 hover:text-zinc-600 transition">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-            </div>
-            
-            <div>
-                <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">Selected Content</span>
-                <p id="note-modal-selected-text" class="text-xs italic text-zinc-600 bg-zinc-50 p-2.5 rounded border border-zinc-150 border-l-2 border-l-amber-500 line-clamp-3 overflow-y-auto max-h-20 font-serif"></p>
-            </div>
-            
-            <div>
-                <label for="note-input-field" class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">Your Personal Note (Optional)</label>
-                <textarea id="note-input-field" placeholder="Add an insight, study question, or task reference..."
-                          class="w-full text-xs p-2 bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition h-24 resize-none"></textarea>
-            </div>
-            
-            <div class="flex justify-end gap-2 shrink-0">
-                <button onclick="closeNoteModal()" class="px-3 py-1.5 border border-zinc-200 rounded-md text-xs hover:bg-zinc-50 text-zinc-700 font-semibold">
-                    Cancel
-                </button>
-                <button id="save-note-btn" onclick="saveNote()" class="px-3 py-1.5 bg-zinc-900 text-white rounded-md text-xs hover:bg-zinc-800 font-semibold flex items-center gap-1">
-                    <i data-lucide="check" class="w-3.5 h-3.5"></i> Save & Highlight
-                </button>
-            </div>
-        </div>
     </div>
 
     <!-- Custom Delete Confirmation Modal -->
@@ -559,9 +509,9 @@
         <div class="bg-white border border-zinc-200 rounded-xl max-w-sm w-full p-5 shadow-xl flex flex-col gap-4">
             <div class="flex items-center gap-2.5 text-rose-600">
                 <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0"></i>
-                <h3 class="text-xs font-bold uppercase tracking-wider">Delete Note & Highlight</h3>
+                <h3 class="text-xs font-bold uppercase tracking-wider">Delete Highlight</h3>
             </div>
-            <p class="text-xs text-zinc-600 leading-normal" id="delete-confirm-message">Are you sure you want to permanently delete this study note and its associated highlight? This action cannot be undone.</p>
+            <p class="text-xs text-zinc-600 leading-normal" id="delete-confirm-message">Are you sure you want to permanently delete this highlight? This action cannot be undone.</p>
             <div class="flex justify-end gap-2 mt-2 shrink-0">
                 <button onclick="closeDeleteConfirmModal()" class="px-3 py-1.5 border border-zinc-200 rounded-md text-xs hover:bg-zinc-50 text-zinc-700 font-semibold transition">
                     Cancel
@@ -603,14 +553,16 @@
             currentModuleId: null,
             currentTab: 'theory',
             moduleData: null,
-            fontSize: 12,
-            activeView: 'courses' // 'courses', 'module', 'search'
+            fontSize: parseInt(localStorage.getItem('preferred_font_size')) || 12,
+            activeView: 'courses' // 'courses', 'module', 'search', 'notes-manager'
         };
 
         let notesOriginView = 'courses';
         let cachedNotes = [];
         let pendingSelectionText = "";
         let activeTooltipNoteId = null;
+        let sidebarNotesLimit = 5;
+        let currentFilteredSidebarNotesLength = 0;
 
         document.addEventListener("DOMContentLoaded", () => {
             fetchCourses();
@@ -622,6 +574,19 @@
             if (pane) {
                 pane.addEventListener("mouseup", handleTextSelection);
                 pane.addEventListener("keyup", handleTextSelection);
+            }
+            
+            // Scroll load more listener for study notes sidebar
+            const sidebarContainer = document.getElementById("sidebar-notes-list");
+            if (sidebarContainer) {
+                sidebarContainer.addEventListener("scroll", () => {
+                    if (sidebarContainer.scrollTop + sidebarContainer.clientHeight >= sidebarContainer.scrollHeight - 15) {
+                        if (sidebarNotesLimit < currentFilteredSidebarNotesLength) {
+                            sidebarNotesLimit += 5;
+                            renderSidebarNotes();
+                        }
+                    }
+                });
             }
             
             // Hide tooltips on outside clicks
@@ -719,13 +684,10 @@
         async function enterCourse(courseId) {
             state.currentCourseId = courseId;
             state.activeView = 'module';
-            state.currentTab = 'theory';
-            state.currentModuleId = null;
             
             document.getElementById("course-selection-screen").classList.add("hidden");
             document.getElementById("workspace-screen").classList.remove("hidden");
-            document.getElementById("view-placeholder").classList.remove("hidden");
-            document.getElementById("module-container").classList.add("hidden");
+            document.getElementById("module-container").classList.remove("hidden");
             document.getElementById("search-container").classList.add("hidden");
 
             const course = state.courses.find(c => c.id === courseId);
@@ -734,7 +696,27 @@
                 document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
             }
 
-            await fetchCurriculum();
+            const modules = await fetchCurriculum();
+            
+            // Determine last visited module &amp; tab
+            let lastModuleId = localStorage.getItem(`last_module_${courseId}`);
+            let lastTab = localStorage.getItem(`last_tab_${courseId}`) || 'theory';
+            
+            if (!lastModuleId && modules && modules.length > 0) {
+                // If user just opened the course, it should open from first module
+                lastModuleId = modules[0].id;
+            }
+            
+            if (lastModuleId) {
+                state.currentTab = lastTab;
+                // Set sidebar notes scope to course when opening a course!
+                const scopeSelect = document.getElementById("sidebar-notes-scope");
+                if (scopeSelect) {
+                    scopeSelect.value = "course";
+                }
+                sidebarNotesLimit = 5;
+                await loadModule(parseInt(lastModuleId));
+            }
             
             // Always make sure notes sidebar is open when entering a course/workspace
             const sidebar = document.getElementById("notes-sidebar");
@@ -770,6 +752,7 @@
                 const modules = await res.json();
                 renderCurriculumList(modules);
                 calculateProgress(modules);
+                return modules;
             } catch (err) {
                 console.error("Error communicating with curriculum endpoint", err);
             }
@@ -791,6 +774,15 @@
             document.getElementById("progress-count").textContent = `${completedSections} of ${totalSections} Passed`;
         }
 
+        async function selectModuleFromSidebar(id) {
+            const scopeSelect = document.getElementById("sidebar-notes-scope");
+            if (scopeSelect) {
+                scopeSelect.value = "module";
+            }
+            sidebarNotesLimit = 5;
+            await loadModule(id);
+        }
+
         function renderCurriculumList(modules) {
             const list = document.getElementById("curriculum-list");
             list.innerHTML = "";
@@ -809,7 +801,7 @@
                     : `<span class="text-[9px] font-bold text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded shrink-0">${completedCount}/5</span>`;
 
                 li.innerHTML = `
-                    <button onclick="loadModule(${m.id})" class="${buttonClass}">
+                    <button onclick="selectModuleFromSidebar(${m.id})" class="${buttonClass}">
                         <span class="truncate pr-2">${escapeHTML(m.title)}</span>
                         ${progressIndicator}
                     </button>
@@ -823,7 +815,6 @@
             state.currentModuleId = id;
             state.activeView = 'module';
             
-            document.getElementById("view-placeholder").classList.add("hidden");
             document.getElementById("search-container").classList.add("hidden");
             document.getElementById("module-container").classList.remove("hidden");
 
@@ -832,6 +823,11 @@
                 const data = await res.json();
                 state.moduleData = data;
                 
+                // Track last visited module
+                if (state.currentCourseId) {
+                    localStorage.setItem(`last_module_${state.currentCourseId}`, id);
+                }
+
                 document.getElementById("module-title").textContent = data.title;
                 document.getElementById("lbl-module-tag").textContent = `Module ${data.id}`;
                 
@@ -914,6 +910,12 @@
 
         function switchTab(tab) {
             state.currentTab = tab;
+            
+            // Track last visited tab
+            if (state.currentCourseId) {
+                localStorage.setItem(`last_tab_${state.currentCourseId}`, tab);
+            }
+
             const tabs = ['theory', 'commands', 'examples', 'exercise', 'insight'];
             
             tabs.forEach(t => {
@@ -955,6 +957,7 @@
 
         function adjustFontSize(diff) {
             state.fontSize = Math.min(24, Math.max(10, state.fontSize + diff));
+            localStorage.setItem('preferred_font_size', state.fontSize);
             applyFontSize();
         }
 
@@ -1051,7 +1054,6 @@
             state.currentModuleId = null;
             document.getElementById("module-container").classList.add("hidden");
             document.getElementById("search-container").classList.add("hidden");
-            document.getElementById("view-placeholder").classList.remove("hidden");
             fetchCurriculum();
         }
 
@@ -1255,34 +1257,13 @@
             }
         }
 
-        function openAddNoteModal() {
+        async function addHighlightDirectly() {
             const selection = window.getSelection();
-            pendingSelectionText = selection.toString().trim();
-            if (!pendingSelectionText) return;
+            const selectedText = selection.toString().trim();
+            if (!selectedText) return;
             
             hideFloatingSelector();
             
-            document.getElementById("note-modal-selected-text").textContent = `"${pendingSelectionText}"`;
-            document.getElementById("note-input-field").value = "";
-            document.getElementById("note-editor-modal").classList.remove("hidden");
-            
-            const saveBtn = document.getElementById("save-note-btn");
-            if (saveBtn) {
-                saveBtn.setAttribute("onclick", "saveNote()");
-            }
-        }
-
-        function closeNoteModal() {
-            document.getElementById("note-editor-modal").classList.add("hidden");
-            const saveBtn = document.getElementById("save-note-btn");
-            if (saveBtn) {
-                saveBtn.setAttribute("onclick", "saveNote()");
-            }
-        }
-
-        async function saveNote() {
-            if (!pendingSelectionText) return;
-            const noteText = document.getElementById("note-input-field").value.trim();
             try {
                 const res = await fetch("/api/notes", {
                     method: "POST",
@@ -1291,12 +1272,11 @@
                         course_id: state.currentCourseId,
                         module_id: state.currentModuleId,
                         section_id: state.currentTab,
-                        selected_text: pendingSelectionText,
-                        note_text: noteText
+                        selected_text: selectedText,
+                        note_text: ""
                     })
                 });
                 if (res.ok) {
-                    closeNoteModal();
                     window.getSelection().removeAllRanges();
                     await fetchAndRenderNotes();
                     if (state.currentModuleId) {
@@ -1304,7 +1284,7 @@
                     }
                 }
             } catch (err) {
-                console.error("Error saving note", err);
+                console.error("Error saving highlight", err);
             }
         }
 
@@ -1316,8 +1296,7 @@
                     const notes = await res.json();
                     const container = document.getElementById("tab-pane-content");
                     notes.forEach(note => {
-                        const hasNoteText = !!(note.note_text && note.note_text.trim());
-                        highlightTextInElement(container, note.selected_text, note.id, hasNoteText);
+                        highlightExactText(container, note.selected_text, note.id);
                     });
                 }
             } catch (err) {
@@ -1325,82 +1304,113 @@
             }
         }
 
-        function highlightTextInElement(element, text, noteId, hasNoteText) {
-            if (!text) return;
+        function highlightExactText(container, targetText, noteId) {
+            if (!targetText) return;
             
-            // Split by newlines to robustly match multi-line / multi-paragraph selections
-            const segments = text.split(/\r?\n/)
-                                 .map(s => s.trim())
-                                 .filter(s => s.length > 3);
-            
-            if (segments.length === 0) return;
-            
-            function walk(node) {
-                if (node.nodeType === 3) {
-                    const textContent = node.nodeValue;
-                    const lowerText = textContent.toLowerCase();
-                    
-                    // Check if any segment matches this text node
-                    let matchedSegment = null;
-                    let idx = -1;
-                    
-                    for (const seq of segments) {
-                        const lowerSearch = seq.toLowerCase();
-                        idx = lowerText.indexOf(lowerSearch);
-                        if (idx !== -1) {
-                            matchedSegment = seq;
-                            break;
-                        }
+            const normalizedTarget = targetText.replace(/\s+/g, ' ').trim();
+            if (normalizedTarget.length < 2) return;
+
+            const textNodes = [];
+            const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+                acceptNode: (node) => {
+                    const parent = node.parentNode;
+                    if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE' || parent.tagName === 'MARK' && parent.getAttribute('data-note-id') === String(noteId))) {
+                        return NodeFilter.FILTER_REJECT;
                     }
-                    
-                    if (matchedSegment && idx !== -1) {
-                        const parent = node.parentNode;
-                        if (parent && parent.tagName !== 'MARK' && parent.tagName !== 'SCRIPT' && parent.tagName !== 'STYLE' && parent.tagName !== 'PRE' && parent.tagName !== 'CODE') {
-                            const fragments = document.createDocumentFragment();
-                            let lastIdx = 0;
-                            
-                            while (idx !== -1 && matchedSegment) {
-                                if (idx > lastIdx) {
-                                    fragments.appendChild(document.createTextNode(textContent.substring(lastIdx, idx)));
-                                }
-                                const mark = document.createElement('mark');
-                                mark.className = hasNoteText
-                                    ? "note-highlight-with-text rounded px-0.5 transition-colors duration-150"
-                                    : "note-highlight-only rounded px-0.5 transition-colors duration-150";
-                                mark.setAttribute('data-note-id', noteId);
-                                mark.onclick = (event) => showNoteTooltip(event, noteId);
-                                mark.appendChild(document.createTextNode(textContent.substring(idx, idx + matchedSegment.length)));
-                                fragments.appendChild(mark);
-                                lastIdx = idx + matchedSegment.length;
-                                
-                                let nextIdx = -1;
-                                let nextSegment = null;
-                                for (const seq of segments) {
-                                    const lowerSearch = seq.toLowerCase();
-                                    const tempIdx = textContent.toLowerCase().indexOf(lowerSearch, lastIdx);
-                                    if (tempIdx !== -1 && (nextIdx === -1 || tempIdx < nextIdx)) {
-                                        nextIdx = tempIdx;
-                                        nextSegment = seq;
-                                    }
-                                }
-                                idx = nextIdx;
-                                matchedSegment = nextSegment;
-                            }
-                            if (lastIdx < textContent.length) {
-                                fragments.appendChild(document.createTextNode(textContent.substring(lastIdx)));
-                            }
-                            parent.replaceChild(fragments, node);
-                        }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }, false);
+
+            let node;
+            while (node = walk.nextNode()) {
+                textNodes.push(node);
+            }
+
+            let aggregateText = "";
+            const mappings = [];
+
+            for (const tNode of textNodes) {
+                const val = tNode.nodeValue;
+                const startInAggregate = aggregateText.length;
+                aggregateText += val;
+                mappings.push({
+                    node: tNode,
+                    length: val.length,
+                    startInAggregate: startInAggregate
+                });
+            }
+
+            let matchIndex = aggregateText.indexOf(targetText);
+            let matchLength = targetText.length;
+
+            if (matchIndex === -1) {
+                const escaped = targetText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const relaxedRegexStr = escaped.replace(/\s+/g, '\\s+');
+                try {
+                    const regex = new RegExp(relaxedRegexStr, 'i');
+                    const match = aggregateText.match(regex);
+                    if (match) {
+                        matchIndex = match.index;
+                        matchLength = match[0].length;
                     }
-                } else if (node.nodeType === 1 && node.childNodes) {
-                    const tag = node.tagName.toUpperCase();
-                    if (tag !== 'BUTTON' && tag !== 'PRE' && tag !== 'CODE' && tag !== 'SCRIPT' && tag !== 'STYLE' && tag !== 'MARK') {
-                        const children = Array.from(node.childNodes);
-                        children.forEach(child => walk(child));
-                    }
+                } catch (e) {}
+            }
+
+            if (matchIndex === -1) {
+                const segments = targetText.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 3);
+                if (segments.length > 0) {
+                    segments.forEach(seg => {
+                        highlightExactText(container, seg, noteId);
+                    });
+                }
+                return;
+            }
+
+            const matchEnd = matchIndex + matchLength;
+
+            const nodesToWrap = [];
+            for (const map of mappings) {
+                const nodeStart = map.startInAggregate;
+                const nodeEnd = nodeStart + map.length;
+
+                if (nodeEnd > matchIndex && nodeStart < matchEnd) {
+                    const intersectStart = Math.max(nodeStart, matchIndex);
+                    const intersectEnd = Math.min(nodeEnd, matchEnd);
+                    nodesToWrap.push({
+                        node: map.node,
+                        startOffset: intersectStart - nodeStart,
+                        endOffset: intersectEnd - nodeStart
+                    });
                 }
             }
-            walk(element);
+
+            for (let i = nodesToWrap.length - 1; i >= 0; i--) {
+                const item = nodesToWrap[i];
+                const tNode = item.node;
+                const parent = tNode.parentNode;
+                if (!parent) continue;
+
+                const val = tNode.nodeValue;
+                const beforeVal = val.substring(0, item.startOffset);
+                const matchVal = val.substring(item.startOffset, item.endOffset);
+                const afterVal = val.substring(item.endOffset);
+
+                const fragment = document.createDocumentFragment();
+                if (beforeVal) {
+                    fragment.appendChild(document.createTextNode(beforeVal));
+                }
+                const mark = document.createElement('mark');
+                mark.className = "note-highlight-only rounded px-0.5 transition-colors duration-150";
+                mark.setAttribute('data-note-id', noteId);
+                mark.onclick = (event) => showNoteTooltip(event, noteId);
+                mark.appendChild(document.createTextNode(matchVal));
+                fragment.appendChild(mark);
+                if (afterVal) {
+                    fragment.appendChild(document.createTextNode(afterVal));
+                }
+
+                parent.replaceChild(fragment, tNode);
+            }
         }
 
         function syncNotesSidebarState() {
@@ -1408,7 +1418,7 @@
             const mainButton = document.getElementById("btn-toggle-notes-sidebar");
             if (!sidebar) return;
             
-            if (state.activeView === 'courses' || state.activeView === 'search') {
+            if (state.activeView === 'courses' || state.activeView === 'search' || state.activeView === 'notes-manager') {
                 sidebar.classList.add("hidden");
                 if (mainButton) {
                     mainButton.classList.remove("bg-white", "shadow-sm");
@@ -1467,53 +1477,7 @@
             activeTooltipNoteId = null;
         }
 
-        async function editNoteFromTooltip() {
-            if (!activeTooltipNoteId) return;
-            const noteId = activeTooltipNoteId;
-            hideNoteTooltip();
-            
-            try {
-                const res = await fetch(`/api/notes`);
-                if (res.ok) {
-                    const notes = await res.json();
-                    const note = notes.find(n => n.id === noteId);
-                    if (note) {
-                        pendingSelectionText = note.selected_text;
-                        document.getElementById("note-modal-selected-text").textContent = `"${note.selected_text}"`;
-                        document.getElementById("note-input-field").value = note.note_text;
-                        
-                        const saveBtn = document.getElementById("save-note-btn");
-                        if (saveBtn) {
-                            saveBtn.setAttribute("onclick", `updateNote(${noteId})`);
-                        }
-                        
-                        document.getElementById("note-editor-modal").classList.remove("hidden");
-                        lucide.createIcons();
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
 
-        async function updateNote(noteId) {
-            const noteText = document.getElementById("note-input-field").value.trim();
-            try {
-                const res = await fetch(`/api/notes/${noteId}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ note_text: noteText })
-                });
-                if (res.ok) {
-                    closeNoteModal();
-                    if (state.currentModuleId) {
-                        await loadModule(state.currentModuleId);
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
 
         let pendingDeleteNoteId = null;
         let pendingDeleteCallback = null;
@@ -1538,13 +1502,24 @@
         }
 
         async function executeDelete() {
-            if (!pendingDeleteNoteId || !pendingDeleteCallback) return;
+            if (!pendingDeleteNoteId) return;
             try {
                 const res = await fetch(`/api/notes/${pendingDeleteNoteId}`, {
                     method: "DELETE"
                 });
                 if (res.ok) {
                     closeDeleteConfirmModal();
+                    
+                    // Instant UI Update:
+                    // 1. Refresh global notes lists and sidebar notes lists
+                    await fetchAndRenderNotes();
+                    
+                    // 2. If viewing a module, reload module to clear highlights
+                    if (state.currentModuleId && state.activeView === 'module') {
+                        await loadModule(state.currentModuleId);
+                    }
+                    
+                    // 3. Fire optional callback
                     if (pendingDeleteCallback) {
                         await pendingDeleteCallback();
                     }
@@ -1559,14 +1534,13 @@
             const noteId = activeTooltipNoteId;
             hideNoteTooltip();
             showDeleteConfirmModal(noteId, async () => {
-                if (state.currentModuleId) {
-                    await loadModule(state.currentModuleId);
-                }
+                // UI is updated instantly inside executeDelete
             });
         }
 
         function enterNotesManager() {
             notesOriginView = state.activeView;
+            state.activeView = 'notes-manager';
             
             document.getElementById("course-selection-screen").classList.add("hidden");
             document.getElementById("workspace-screen").classList.add("hidden");
@@ -1580,6 +1554,7 @@
                 });
             }
             
+            syncNotesSidebarState();
             fetchAndRenderNotes();
         }
 
@@ -1593,6 +1568,7 @@
                 state.activeView = 'courses';
                 fetchCourses();
             }
+            syncNotesSidebarState();
         }
 
         async function fetchAndRenderNotes() {
@@ -1623,15 +1599,14 @@
             }
             if (searchQuery) {
                 filtered = filtered.filter(n => 
-                    n.selected_text.toLowerCase().includes(searchQuery) || 
-                    n.note_text.toLowerCase().includes(searchQuery)
+                    n.selected_text.toLowerCase().includes(searchQuery)
                 );
             }
             
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="col-span-full p-12 text-center border border-dashed rounded-lg border-zinc-200">
-                        <p class="text-xs text-zinc-500">No notes or highlights match your filters.</p>
+                        <p class="text-xs text-zinc-500">No highlights match your filters.</p>
                     </div>
                 `;
                 return;
@@ -1664,16 +1639,9 @@
                         </div>
                         
                         <div class="space-y-1.5 mt-2 overflow-hidden flex-1 min-h-0 break-words whitespace-pre-wrap">
-                            <div class="bg-zinc-50 border-l-2 border-amber-400 p-1.5 rounded-r text-[10px] text-zinc-600 italic font-serif line-clamp-2 leading-snug">
+                            <div class="bg-zinc-50 border-l-2 border-amber-400 p-1.5 rounded-r text-[11px] text-zinc-800 line-clamp-3 leading-snug">
                                 "${escapeHTML(note.selected_text)}"
                             </div>
-                            ${note.note_text ? `
-                            <div class="text-[11px] text-zinc-800 bg-zinc-50/50 px-2 py-1 rounded border border-zinc-150 line-clamp-2 leading-tight">
-                                ${escapeHTML(note.note_text)}
-                            </div>
-                            ` : `
-                            <p class="text-[9px] italic text-zinc-400">(Highlighted text)</p>
-                            `}
                         </div>
                     </div>
                     
@@ -1684,10 +1652,7 @@
                         </button>
                         
                         <div class="flex items-center gap-2">
-                            <button onclick="event.stopPropagation(); editNoteFromManager(${note.id})" class="text-zinc-400 hover:text-zinc-900 p-1 transition animate-none" title="Edit Note text">
-                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                            </button>
-                            <button onclick="event.stopPropagation(); deleteNoteFromManager(${note.id})" class="text-rose-400 hover:text-rose-600 p-1 transition animate-none" title="Delete Note and Highlight">
+                            <button onclick="event.stopPropagation(); deleteNoteFromManager(${note.id})" class="text-rose-400 hover:text-rose-600 p-1 transition animate-none" title="Delete Highlight">
                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
@@ -1698,47 +1663,9 @@
             lucide.createIcons();
         }
 
-        async function editNoteFromManager(noteId) {
-            try {
-                const note = cachedNotes.find(n => n.id === noteId);
-                if (note) {
-                    pendingSelectionText = note.selected_text;
-                    document.getElementById("note-modal-selected-text").textContent = `"${note.selected_text}"`;
-                    document.getElementById("note-input-field").value = note.note_text;
-                    
-                    const saveBtn = document.getElementById("save-note-btn");
-                    if (saveBtn) {
-                        saveBtn.setAttribute("onclick", `updateNoteFromManager(${noteId})`);
-                    }
-                    
-                    document.getElementById("note-editor-modal").classList.remove("hidden");
-                    lucide.createIcons();
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        async function updateNoteFromManager(noteId) {
-            const noteText = document.getElementById("note-input-field").value.trim();
-            try {
-                const res = await fetch(`/api/notes/${noteId}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ note_text: noteText })
-                });
-                if (res.ok) {
-                    closeNoteModal();
-                    await fetchAndRenderNotes();
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
         function deleteNoteFromManager(noteId) {
             showDeleteConfirmModal(noteId, async () => {
-                await fetchAndRenderNotes();
+                // UI is updated instantly inside executeDelete
             });
         }
 
@@ -1756,16 +1683,19 @@
             }
             
             await fetchCurriculum();
+            
+            const scopeSelect = document.getElementById("sidebar-notes-scope");
+            if (scopeSelect) {
+                scopeSelect.value = "module";
+            }
+            sidebarNotesLimit = 5;
+            
             await loadModule(moduleId);
             
             setTimeout(() => {
                 const markEl = document.querySelector(`mark[data-note-id="${noteId}"]`);
                 if (markEl) {
                     markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    markEl.classList.add("ring-2", "ring-amber-500", "ring-offset-2");
-                    setTimeout(() => {
-                        markEl.classList.remove("ring-2", "ring-amber-500", "ring-offset-2");
-                    }, 3000);
                 }
             }, 400);
         }
@@ -1798,11 +1728,6 @@
                     md += `### Module ${note.module_id} - ${sectionLabel}\n`;
                     md += `*Logged on: ${note.created_at}*\n\n`;
                     md += `> ${note.selected_text}\n\n`;
-                    if (note.note_text) {
-                        md += `**My Note:**\n${note.note_text}\n\n`;
-                    } else {
-                        md += `*(Highlighted only, no additional notes)*\n\n`;
-                    }
                     md += `---\n\n`;
                 });
             }
@@ -1843,8 +1768,6 @@
             const searchQuery = document.getElementById("sidebar-notes-search")?.value.toLowerCase().trim() || "";
             const scope = document.getElementById("sidebar-notes-scope")?.value || "module";
             
-            container.innerHTML = "";
-            
             let filtered = cachedNotes;
             
             if (scope === "module") {
@@ -1855,21 +1778,26 @@
             
             if (searchQuery) {
                 filtered = filtered.filter(n => 
-                    n.selected_text.toLowerCase().includes(searchQuery) || 
-                    n.note_text.toLowerCase().includes(searchQuery)
+                    n.selected_text.toLowerCase().includes(searchQuery)
                 );
             }
             
-            if (filtered.length === 0) {
+            currentFilteredSidebarNotesLength = filtered.length;
+            
+            // Slice the notes list up to the current progressive load limit
+            const displayed = filtered.slice(0, sidebarNotesLimit);
+            
+            if (displayed.length === 0) {
                 container.innerHTML = `
                     <div class="p-4 text-center border border-dashed rounded-lg border-zinc-200">
-                        <p class="text-[11px] text-zinc-500">No matching notes or highlights found.</p>
+                        <p class="text-[11px] text-zinc-500">No matching highlights found.</p>
                     </div>
                 `;
                 return;
             }
             
-            filtered.forEach(note => {
+            container.innerHTML = "";
+            displayed.forEach(note => {
                 const div = document.createElement("div");
                 div.className = "bg-zinc-50 border border-zinc-200 rounded-lg p-3 relative hover:border-zinc-300 transition flex flex-col justify-between gap-2 cursor-pointer h-40 select-none hover:shadow-sm overflow-hidden";
                 div.onclick = (e) => {
@@ -1884,26 +1812,16 @@
                                 Module ${note.module_id} • ${tabFriendlyNames[note.section_id] || note.section_id}
                             </span>
                             <div class="flex items-center gap-1">
-                                <button onclick="event.stopPropagation(); editSidebarNote(${note.id})" class="text-zinc-400 hover:text-zinc-900 transition p-0.5 animate-none" title="Edit Note">
-                                    <i data-lucide="edit-3" class="w-3 h-3"></i>
-                                </button>
-                                <button onclick="event.stopPropagation(); deleteSidebarNote(${note.id})" class="text-rose-500 hover:text-rose-700 transition p-0.5 animate-none" title="Delete Note">
+                                <button onclick="event.stopPropagation(); deleteSidebarNote(${note.id})" class="text-rose-500 hover:text-rose-700 transition p-0.5 animate-none" title="Delete Highlight">
                                     <i data-lucide="trash-2" class="w-3 h-3"></i>
                                 </button>
                             </div>
                         </div>
                         
                         <div class="space-y-1.5 mt-2 overflow-hidden flex-1 min-h-0 break-words whitespace-pre-wrap">
-                            <div class="border-l-2 border-amber-400 pl-2 text-[10px] text-zinc-600 italic font-serif leading-snug line-clamp-2">
+                            <div class="border-l-2 border-amber-400 pl-2 text-[11px] text-zinc-800 leading-snug line-clamp-3">
                                 "${escapeHTML(note.selected_text)}"
                             </div>
-                            ${note.note_text ? `
-                            <div class="text-[10px] text-zinc-800 bg-white p-1.5 rounded border border-zinc-150 leading-snug line-clamp-2">
-                                ${escapeHTML(note.note_text)}
-                            </div>
-                            ` : `
-                            <span class="text-[9px] italic text-zinc-400 block">(Highlighted text)</span>
-                            `}
                         </div>
                     </div>
                     
@@ -1913,56 +1831,21 @@
                 `;
                 container.appendChild(div);
             });
+            
+            // Dynamic scroll load indicator inside sidebar
+            if (filtered.length > sidebarNotesLimit) {
+                const indicator = document.createElement("div");
+                indicator.className = "p-2 text-center text-[10px] text-zinc-400 font-semibold animate-pulse select-none cursor-pointer";
+                indicator.textContent = "Scroll down to load more...";
+                container.appendChild(indicator);
+            }
+            
             lucide.createIcons();
-        }
-
-        async function editSidebarNote(noteId) {
-            try {
-                const note = cachedNotes.find(n => n.id === noteId);
-                if (note) {
-                    pendingSelectionText = note.selected_text;
-                    document.getElementById("note-modal-selected-text").textContent = `"${note.selected_text}"`;
-                    document.getElementById("note-input-field").value = note.note_text;
-                    
-                    const saveBtn = document.getElementById("save-note-btn");
-                    if (saveBtn) {
-                        saveBtn.setAttribute("onclick", `updateSidebarNote(${noteId})`);
-                    }
-                    
-                    document.getElementById("note-editor-modal").classList.remove("hidden");
-                    lucide.createIcons();
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        async function updateSidebarNote(noteId) {
-            const noteText = document.getElementById("note-input-field").value.trim();
-            try {
-                const res = await fetch(`/api/notes/${noteId}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ note_text: noteText })
-                });
-                if (res.ok) {
-                    closeNoteModal();
-                    await fetchAndRenderNotes();
-                    if (state.currentModuleId) {
-                        await loadModule(state.currentModuleId);
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-            }
         }
 
         function deleteSidebarNote(noteId) {
             showDeleteConfirmModal(noteId, async () => {
-                await fetchAndRenderNotes();
-                if (state.currentModuleId) {
-                    await loadModule(state.currentModuleId);
-                }
+                // UI is updated instantly inside executeDelete
             });
         }
 
