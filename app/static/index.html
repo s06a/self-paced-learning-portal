@@ -887,7 +887,13 @@
 
         function selectModuleFromSidebar(id) {
             sidebarNotesLimit = 5;
-            window.location.hash = `#/course/${state.currentCourseId}/module/${id}`;
+            state.currentTab = 'theory';
+            const targetHash = `#/course/${state.currentCourseId}/module/${id}`;
+            if (window.location.hash === targetHash) {
+                switchTab('theory');
+            } else {
+                window.location.hash = targetHash;
+            }
         }
 
         function renderCurriculumList(modules) {
