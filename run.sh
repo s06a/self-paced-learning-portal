@@ -60,7 +60,8 @@ CREATE TABLE IF NOT EXISTS notes (
     section_id TEXT,
     selected_text TEXT,
     note_text TEXT,
-    created_at TEXT
+    created_at TEXT,
+    occurrence_index INTEGER DEFAULT 0
 );
 """)
 conn.commit()

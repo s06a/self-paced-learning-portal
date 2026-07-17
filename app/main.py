@@ -43,10 +43,19 @@ def init_db():
         section_id TEXT,
         selected_text TEXT,
         note_text TEXT,
-        created_at TEXT
+        created_at TEXT,
+        occurrence_index INTEGER DEFAULT 0
     );
     """)
     conn.commit()
+    
+    # Run graceful migration if the column doesn't exist
+    try:
+        cursor.execute("ALTER TABLE notes ADD COLUMN occurrence_index INTEGER DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
+        
     conn.close()
 
 def load_courses():
@@ -302,6 +311,7 @@ class NoteCreate(BaseModel):
     section_id: str
     selected_text: str
     note_text: str = ""
+    occurrence_index: int = 0
 
 class NoteUpdate(BaseModel):
     note_text: str
@@ -313,9 +323,9 @@ def create_note(note: NoteCreate):
     cursor = conn.cursor()
     created_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("""
-        INSERT INTO notes (course_id, module_id, section_id, selected_text, note_text, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (note.course_id, note.module_id, note.section_id, note.selected_text, note.note_text, created_at))
+        INSERT INTO notes (course_id, module_id, section_id, selected_text, note_text, created_at, occurrence_index)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (note.course_id, note.module_id, note.section_id, note.selected_text, note.note_text, created_at, note.occurrence_index))
     conn.commit()
     note_id = cursor.lastrowid
     conn.close()
@@ -344,6 +354,12 @@ def get_notes(course_id: str = None, module_id: int = None, section_id: str = No
     
     output = []
     for row in rows:
+        occ = 0
+        try:
+            occ = row["occurrence_index"]
+        except Exception:
+            pass
+            
         output.append({
             "id": row["id"],
             "course_id": row["course_id"],
@@ -351,7 +367,8 @@ def get_notes(course_id: str = None, module_id: int = None, section_id: str = No
             "section_id": row["section_id"],
             "selected_text": row["selected_text"],
             "note_text": row["note_text"],
-            "created_at": row["created_at"]
+            "created_at": row["created_at"],
+            "occurrence_index": occ
         })
     return output
 

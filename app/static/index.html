@@ -1351,12 +1351,58 @@
             }
         }
 
+        function getSelectionCharacterOffsetWithin(element) {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return 0;
+            const range = selection.getRangeAt(0);
+            const preCeedRange = range.cloneRange();
+            preCeedRange.selectNodeContents(element);
+            preCeedRange.setEnd(range.startContainer, range.startOffset);
+            return preCeedRange.toString().length;
+        }
+
         async function addHighlightDirectly() {
             const selection = window.getSelection();
             const selectedText = selection.toString().trim();
             if (!selectedText) return;
             
             hideFloatingSelector();
+            
+            const container = document.getElementById("tab-pane-content");
+            const offset = getSelectionCharacterOffsetWithin(container);
+            
+            // Build the aggregate text of the container (including text inside highlights)
+            const textNodes = [];
+            const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+                acceptNode: (node) => {
+                    const parent = node.parentNode;
+                    if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }, false);
+
+            let node;
+            while (node = walk.nextNode()) {
+                textNodes.push(node);
+            }
+
+            let aggregateText = "";
+            for (const tNode of textNodes) {
+                aggregateText += tNode.nodeValue;
+            }
+
+            let occurrenceIndex = 0;
+            let index = 0;
+            while (true) {
+                const pos = aggregateText.indexOf(selectedText, index);
+                if (pos === -1 || pos >= offset) {
+                    break;
+                }
+                occurrenceIndex++;
+                index = pos + 1;
+            }
             
             try {
                 const res = await fetch("/api/notes", {
@@ -1367,7 +1413,8 @@
                         module_id: state.currentModuleId,
                         section_id: state.currentTab,
                         selected_text: selectedText,
-                        note_text: ""
+                        note_text: "",
+                        occurrence_index: occurrenceIndex
                     })
                 });
                 if (res.ok) {
@@ -1384,43 +1431,84 @@
 
         async function applyHighlightsForCurrentSection() {
             if (!state.currentCourseId || !state.currentModuleId || !state.currentTab) return;
-            try {
-                const res = await fetch(`/api/notes?course_id=${state.currentCourseId}&module_id=${state.currentModuleId}&section_id=${state.currentTab}`);
-                if (res.ok) {
-                    const notes = await res.json();
-                    const container = document.getElementById("tab-pane-content");
-                    notes.forEach(note => {
-                        highlightExactText(container, note.selected_text, note.id);
-                    });
+            
+            const container = document.getElementById("tab-pane-content");
+            if (!container) return;
+
+            // Instantly use memory-cached notes if populated, otherwise fallback to quick fetch
+            let notes = cachedNotes;
+            if (!notes || notes.length === 0) {
+                try {
+                    const res = await fetch(`/api/notes`);
+                    if (res.ok) {
+                        cachedNotes = await res.json();
+                        notes = cachedNotes;
+                    }
+                } catch (e) {
+                    console.error("Error fetching notes in applyHighlights", e);
                 }
-            } catch (err) {
-                console.error("Error loading highlights", err);
             }
+
+            // Filter for current workspace tab scope
+            const sectionNotes = notes.filter(n => 
+                n.course_id === state.currentCourseId && 
+                n.module_id === state.currentModuleId && 
+                n.section_id === state.currentTab
+            );
+
+            applyAllSectionHighlights(container, sectionNotes);
         }
 
-        function highlightExactText(container, targetText, noteId) {
-            if (!targetText) return;
-            
-            // If the target text contains newlines, process line by line to avoid highlighting blank lines in-between
-            if (targetText.includes("\n")) {
-                const lines = targetText.split(/\r?\n/);
-                lines.forEach(line => {
-                    const trimmed = line.trim();
-                    if (trimmed.length >= 2) {
-                        highlightExactText(container, trimmed, noteId);
-                    }
-                });
-                return;
+        function findNthMatch(text, targetText, occurrence) {
+            let matchIndex = -1;
+            let matchLength = targetText.length;
+
+            let index = 0;
+            let foundExact = false;
+            for (let i = 0; i <= occurrence; i++) {
+                const pos = text.indexOf(targetText, index);
+                if (pos === -1) {
+                    foundExact = false;
+                    break;
+                }
+                if (i === occurrence) {
+                    matchIndex = pos;
+                    matchLength = targetText.length;
+                    foundExact = true;
+                }
+                index = pos + 1;
             }
 
-            const normalizedTarget = targetText.replace(/\s+/g, ' ').trim();
-            if (normalizedTarget.length < 2) return;
+            if (!foundExact) {
+                const escaped = targetText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const relaxedRegexStr = escaped.replace(/\s+/g, '\\s+');
+                try {
+                    const regex = new RegExp(relaxedRegexStr, 'gi');
+                    let match;
+                    let count = 0;
+                    while ((match = regex.exec(text)) !== null) {
+                        if (count === occurrence) {
+                            matchIndex = match.index;
+                            matchLength = match[0].length;
+                            break;
+                        }
+                        count++;
+                    }
+                } catch (e) {}
+            }
 
+            return { matchIndex, matchLength };
+        }
+
+        function applyAllSectionHighlights(container, notes) {
+            if (!container || !notes || notes.length === 0) return;
+
+            // 1. Walk the DOM to gather all original text nodes
             const textNodes = [];
             const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
                 acceptNode: (node) => {
                     const parent = node.parentNode;
-                    if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE' || parent.tagName === 'MARK' && parent.getAttribute('data-note-id') === String(noteId))) {
+                    if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
                         return NodeFilter.FILTER_REJECT;
                     }
                     return NodeFilter.FILTER_ACCEPT;
@@ -1446,82 +1534,99 @@
                 });
             }
 
-            let matchIndex = aggregateText.indexOf(targetText);
-            let matchLength = targetText.length;
+            // 2. Identify match index and segment boundaries for each highlight
+            const plannedHighlights = [];
 
-            if (matchIndex === -1) {
-                const escaped = targetText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                const relaxedRegexStr = escaped.replace(/\s+/g, '\\s+');
-                try {
-                    const regex = new RegExp(relaxedRegexStr, 'i');
-                    const match = aggregateText.match(regex);
-                    if (match) {
-                        matchIndex = match.index;
-                        matchLength = match[0].length;
+            notes.forEach(note => {
+                const targetText = note.selected_text;
+                if (!targetText) return;
+
+                if (targetText.includes("\n")) {
+                    const lines = targetText.split(/\r?\n/);
+                    lines.forEach(line => {
+                        const trimmed = line.trim();
+                        if (trimmed.length >= 2) {
+                            const occ = note.occurrence_index || 0;
+                            const { matchIndex, matchLength } = findNthMatch(aggregateText, trimmed, occ);
+                            if (matchIndex !== -1) {
+                                plannedHighlights.push({
+                                    noteId: note.id,
+                                    matchIndex,
+                                    matchLength
+                                });
+                            }
+                        }
+                    });
+                } else {
+                    const occ = note.occurrence_index || 0;
+                    const { matchIndex, matchLength } = findNthMatch(aggregateText, targetText, occ);
+                    if (matchIndex !== -1) {
+                        plannedHighlights.push({
+                            noteId: note.id,
+                            matchIndex,
+                            matchLength
+                        });
                     }
-                } catch (e) {}
-            }
-
-            if (matchIndex === -1) {
-                const segments = targetText.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 3);
-                if (segments.length > 0) {
-                    segments.forEach(seg => {
-                        highlightExactText(container, seg, noteId);
-                    });
                 }
-                return;
-            }
+            });
 
-            const matchEnd = matchIndex + matchLength;
+            // 3. Sort highlights descending by matchIndex (right to left rendering)
+            plannedHighlights.sort((a, b) => b.matchIndex - a.matchIndex);
 
-            const nodesToWrap = [];
-            for (const map of mappings) {
-                const nodeStart = map.startInAggregate;
-                const nodeEnd = nodeStart + map.length;
+            // 4. Safely apply highlights in reverse order
+            plannedHighlights.forEach(hl => {
+                const matchIndex = hl.matchIndex;
+                const matchLength = hl.matchLength;
+                const matchEnd = matchIndex + matchLength;
 
-                if (nodeEnd > matchIndex && nodeStart < matchEnd) {
-                    const intersectStart = Math.max(nodeStart, matchIndex);
-                    const intersectEnd = Math.min(nodeEnd, matchEnd);
-                    nodesToWrap.push({
-                        node: map.node,
-                        startOffset: intersectStart - nodeStart,
-                        endOffset: intersectEnd - nodeStart
-                    });
-                }
-            }
+                const nodesToWrap = [];
+                for (const map of mappings) {
+                    const nodeStart = map.startInAggregate;
+                    const nodeEnd = nodeStart + map.length;
 
-            for (let i = nodesToWrap.length - 1; i >= 0; i--) {
-                const item = nodesToWrap[i];
-                const tNode = item.node;
-                const parent = tNode.parentNode;
-                if (!parent) continue;
-
-                const val = tNode.nodeValue;
-                const beforeVal = val.substring(0, item.startOffset);
-                const matchVal = val.substring(item.startOffset, item.endOffset);
-                const afterVal = val.substring(item.endOffset);
-
-                // Do not highlight blank or whitespace-only sections
-                if (!matchVal.trim()) {
-                    continue;
+                    if (nodeEnd > matchIndex && nodeStart < matchEnd) {
+                        const intersectStart = Math.max(nodeStart, matchIndex);
+                        const intersectEnd = Math.min(nodeEnd, matchEnd);
+                        nodesToWrap.push({
+                            node: map.node,
+                            startOffset: intersectStart - nodeStart,
+                            endOffset: intersectEnd - nodeStart
+                        });
+                    }
                 }
 
-                const fragment = document.createDocumentFragment();
-                if (beforeVal) {
-                    fragment.appendChild(document.createTextNode(beforeVal));
-                }
-                const mark = document.createElement('mark');
-                mark.className = "note-highlight-only rounded px-0.5 transition-colors duration-150";
-                mark.setAttribute('data-note-id', noteId);
-                mark.onclick = (event) => showNoteTooltip(event, noteId);
-                mark.appendChild(document.createTextNode(matchVal));
-                fragment.appendChild(mark);
-                if (afterVal) {
-                    fragment.appendChild(document.createTextNode(afterVal));
-                }
+                for (let i = nodesToWrap.length - 1; i >= 0; i--) {
+                    const item = nodesToWrap[i];
+                    const tNode = item.node;
+                    const parent = tNode.parentNode;
+                    if (!parent) continue;
 
-                parent.replaceChild(fragment, tNode);
-            }
+                    const val = tNode.nodeValue;
+                    const beforeVal = val.substring(0, item.startOffset);
+                    const matchVal = val.substring(item.startOffset, item.endOffset);
+                    const afterVal = val.substring(item.endOffset);
+
+                    if (!matchVal.trim()) {
+                        continue;
+                    }
+
+                    const fragment = document.createDocumentFragment();
+                    if (beforeVal) {
+                        fragment.appendChild(document.createTextNode(beforeVal));
+                    }
+                    const mark = document.createElement('mark');
+                    mark.className = "note-highlight-only rounded px-0.5 transition-colors duration-150";
+                    mark.setAttribute('data-note-id', hl.noteId);
+                    mark.onclick = (event) => showNoteTooltip(event, hl.noteId);
+                    mark.appendChild(document.createTextNode(matchVal));
+                    fragment.appendChild(mark);
+                    if (afterVal) {
+                        fragment.appendChild(document.createTextNode(afterVal));
+                    }
+
+                    parent.replaceChild(fragment, tNode);
+                }
+            });
         }
 
         function syncNotesSidebarState() {
