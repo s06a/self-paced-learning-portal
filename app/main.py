@@ -5,6 +5,7 @@ import importlib.util
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 app = FastAPI(title="Self-Paced Learning Core Engine")
 
@@ -15,6 +16,27 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS progress (
+        course_id TEXT,
+        module_id INTEGER,
+        section_id TEXT,
+        PRIMARY KEY (course_id, module_id, section_id)
+    );
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS pomodoro (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        completed_at TEXT,
+        duration_minutes INTEGER
+    );
+    """)
+    conn.commit()
+    conn.close()
 
 def load_courses():
     global COURSES
@@ -47,6 +69,7 @@ def load_courses():
                     print(f"[-] Failed to load course '{filename}': {e}")
 
 # Initial load on bootstrap
+init_db()
 load_courses()
 
 def safe_int(val):
@@ -214,5 +237,49 @@ def search_all(q: str = Query("", min_length=1)):
                 })
                 
     return {"results": results}
+
+class PomodoroLog(BaseModel):
+    date: str
+    duration: int = 25
+
+@app.post("/api/pomodoro")
+def log_pomodoro(log: PomodoroLog):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO pomodoro (completed_at, duration_minutes) VALUES (?, ?)", (log.date, log.duration))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "date": log.date, "duration": log.duration}
+
+@app.get("/api/pomodoro/stats")
+def get_pomodoro_stats(dates: str = Query(...)):
+    import datetime
+    day_strs = dates.split(",")
+    conn = get_db()
+    cursor = conn.cursor()
+    placeholders = ",".join("?" for _ in day_strs)
+    cursor.execute(f"""
+        SELECT completed_at, SUM(duration_minutes) as total
+        FROM pomodoro
+        WHERE completed_at IN ({placeholders})
+        GROUP BY completed_at
+    """, day_strs)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    totals_map = {row["completed_at"]: row["total"] for row in rows}
+    
+    stats = []
+    for d_str in day_strs:
+        try:
+            day_name = datetime.datetime.strptime(d_str, "%Y-%m-%d").strftime("%a")
+        except Exception:
+            day_name = d_str
+        stats.append({
+            "date": d_str,
+            "day_name": day_name,
+            "minutes": totals_map.get(d_str, 0) or 0
+        })
+    return stats
 
 app.mount("/", StaticFiles(directory="app/static", html=True), name="static")

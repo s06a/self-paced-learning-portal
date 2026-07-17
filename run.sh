@@ -45,6 +45,13 @@ CREATE TABLE IF NOT EXISTS progress (
     PRIMARY KEY (course_id, module_id, section_id)
 );
 """)
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS pomodoro (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    completed_at TEXT,
+    duration_minutes INTEGER
+);
+""")
 conn.commit()
 conn.close()
 print("Database data.db verified/initialized successfully.")

@@ -110,21 +110,37 @@
     <!-- Screen 1: Course Selection Dashboard -->
     <div id="course-selection-screen" class="flex-1 overflow-y-auto p-6 md:p-12 max-w-5xl mx-auto w-full flex flex-col justify-between h-full">
         <div>
-            <!-- Branding Header -->
-            <div class="flex items-center gap-2 mb-10">
-                <div class="bg-zinc-900 text-white rounded p-1.5 flex items-center justify-center">
-                    <i data-lucide="layers" class="w-6 h-6"></i>
-                </div>
+            <!-- Branding Header and Pomodoro Stats -->
+            <div class="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-10">
                 <div>
-                    <h1 class="font-extrabold text-sm tracking-tight">Self-Paced Learning Portal</h1>
-                    <p class="text-[10px] text-zinc-500">Self-Paced Curriculum</p>
+                    <div class="flex items-center gap-2 mb-6">
+                        <div class="bg-zinc-900 text-white rounded p-1.5 flex items-center justify-center">
+                            <i data-lucide="layers" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-extrabold text-sm tracking-tight">Self-Paced Learning Portal</h1>
+                            <p class="text-[10px] text-zinc-500">Self-Paced Curriculum</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Available Tracks</h2>
+                        <p class="text-xs text-zinc-500 mt-1">Select an engineering domain specialization to begin your lessons.</p>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Dashboard Title Header -->
-            <div class="mb-8">
-                <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Available Tracks</h2>
-                <p class="text-xs text-zinc-500 mt-1">Select an engineering domain specialization to begin your lessons.</p>
+                <!-- Minimal 7-day Pomodoro Stats -->
+                <div id="pomodoro-stats-panel" class="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm min-w-[280px] md:max-w-xs w-full md:w-auto shrink-0 self-start">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-1.5">
+                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-zinc-600"></i>
+                            <span class="text-[10px] font-bold text-zinc-800 uppercase tracking-wider">Weekly Focus (mins)</span>
+                        </div>
+                        <span id="weekly-total" class="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">0m total</span>
+                    </div>
+                    <div id="stats-bars-container" class="flex items-end justify-between h-16 gap-2 pt-1">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
             </div>
 
             <!-- Course Cards Grid -->
@@ -145,10 +161,20 @@
         <aside class="w-80 h-full border-r border-zinc-200 bg-white flex flex-col justify-between shrink-0 overflow-hidden">
             <div class="p-5 flex flex-col gap-4 overflow-hidden flex-1">
                 
-                <!-- Back navigation action -->
-                <button onclick="backToCourses()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-900 transition font-bold uppercase tracking-wider shrink-0">
-                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Tracks
-                </button>
+                <!-- Back action and Pomodoro Widget -->
+                <div class="flex items-center justify-between shrink-0 gap-2">
+                    <button onclick="backToCourses()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-900 transition font-bold uppercase tracking-wider">
+                        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Tracks
+                    </button>
+                    
+                    <div id="pomodoro-widget" class="flex items-center gap-1 bg-zinc-100 border border-zinc-200 px-2 py-1 rounded-md text-[10px] font-bold text-zinc-700 shrink-0">
+                        <i data-lucide="timer" class="w-3.5 h-3.5 text-zinc-500" id="pomodoro-icon"></i>
+                        <span id="pomodoro-time" class="font-mono">25:00</span>
+                        <button id="pomodoro-btn" onclick="togglePomodoro()" class="text-zinc-900 hover:text-zinc-600 transition-colors uppercase text-[9px] tracking-wider pl-1.5 border-l border-zinc-200 focus:outline-none">
+                            Start
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Course Title Header -->
                 <div class="shrink-0 border-b border-zinc-200 pb-3">
@@ -321,6 +347,7 @@
                 const res = await fetch("/api/courses");
                 state.courses = await res.json();
                 renderCourseGrid();
+                fetchPomodoroStats();
             } catch (err) {
                 console.error("Error communicating with courses endpoint", err);
             }
@@ -681,6 +708,157 @@
             document.getElementById("search-container").classList.add("hidden");
             document.getElementById("view-placeholder").classList.remove("hidden");
             fetchCurriculum();
+        }
+
+        let pomodoroInterval = null;
+        let pomodoroEndTime = null;
+        let pomodoroDuration = 25 * 60 * 1000; // 25 minutes in ms
+
+        function togglePomodoro() {
+            if (pomodoroInterval) {
+                stopPomodoro();
+            } else {
+                startPomodoro();
+            }
+        }
+
+        function startPomodoro() {
+            pomodoroEndTime = Date.now() + pomodoroDuration;
+            updatePomodoroDisplay();
+            
+            document.getElementById("pomodoro-btn").textContent = "Stop";
+            document.getElementById("pomodoro-btn").className = "text-rose-600 hover:text-rose-800 transition-colors uppercase text-[9px] tracking-wider pl-1.5 border-l border-zinc-200 focus:outline-none font-extrabold";
+            document.getElementById("pomodoro-icon").classList.add("text-rose-500", "animate-pulse");
+            
+            pomodoroInterval = setInterval(() => {
+                const remaining = Math.max(0, pomodoroEndTime - Date.now());
+                updatePomodoroDisplay(remaining);
+                
+                if (remaining === 0) {
+                    completePomodoro();
+                }
+            }, 200);
+        }
+
+        function stopPomodoro() {
+            clearInterval(pomodoroInterval);
+            pomodoroInterval = null;
+            pomodoroEndTime = null;
+            
+            document.getElementById("pomodoro-time").textContent = "25:00";
+            document.getElementById("pomodoro-btn").textContent = "Start";
+            document.getElementById("pomodoro-btn").className = "text-zinc-900 hover:text-zinc-600 transition-colors uppercase text-[9px] tracking-wider pl-1.5 border-l border-zinc-200 focus:outline-none";
+            document.getElementById("pomodoro-icon").className = "w-3.5 h-3.5 text-zinc-500";
+            document.getElementById("pomodoro-icon").classList.remove("text-rose-500", "animate-pulse");
+        }
+
+        function updatePomodoroDisplay(ms = pomodoroDuration) {
+            const totalSecs = Math.ceil(ms / 1000);
+            const mins = Math.floor(totalSecs / 60);
+            const secs = totalSecs % 60;
+            document.getElementById("pomodoro-time").textContent = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        async function completePomodoro() {
+            stopPomodoro();
+            
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            } catch (e) {
+                console.log("Could not play notification sound:", e);
+            }
+            
+            alert("Focus session complete! 25 minutes logged.");
+            
+            const localDate = getLocalDateString();
+            try {
+                const res = await fetch("/api/pomodoro", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ date: localDate, duration: 25 })
+                });
+                if (res.ok) {
+                    fetchCourses(); // re-fetches list and pomodoro stats diagram
+                }
+            } catch (err) {
+                console.error("Failed to submit finished Pomodoro session", err);
+            }
+        }
+
+        function getLocalDateString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        async function fetchPomodoroStats() {
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                dates.push(`${year}-${month}-${day}`);
+            }
+            
+            try {
+                const res = await fetch(`/api/pomodoro/stats?dates=${dates.join(',')}`);
+                if (res.ok) {
+                    const stats = await res.json();
+                    renderPomodoroStats(stats);
+                }
+            } catch (err) {
+                console.error("Error communicating with stats endpoint", err);
+            }
+        }
+
+        function renderPomodoroStats(stats) {
+            const container = document.getElementById("stats-bars-container");
+            if (!container) return;
+            
+            container.innerHTML = "";
+            const maxMins = Math.max(...stats.map(s => s.minutes), 25);
+            const totalMins = stats.reduce((sum, s) => sum + s.minutes, 0);
+            
+            document.getElementById("weekly-total").textContent = `${totalMins}m total`;
+            
+            stats.forEach(s => {
+                const heightPct = Math.min(100, Math.max(4, (s.minutes / maxMins) * 100));
+                const barCol = document.createElement("div");
+                barCol.className = "flex flex-col items-center flex-1 h-full justify-end group relative cursor-pointer";
+                
+                const tooltip = document.createElement("div");
+                tooltip.className = "absolute bottom-full mb-1 hidden group-hover:block bg-zinc-900 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded shadow whitespace-nowrap z-20 pointer-events-none";
+                tooltip.textContent = `${s.minutes} mins`;
+                barCol.appendChild(tooltip);
+                
+                const bar = document.createElement("div");
+                bar.className = s.minutes > 0 
+                    ? "w-full bg-zinc-950 rounded-t transition-all duration-300 group-hover:bg-zinc-700" 
+                    : "w-full bg-zinc-100 border-t border-zinc-200/50 rounded-t transition-all duration-300";
+                bar.style.height = `${heightPct}%`;
+                barCol.appendChild(bar);
+                
+                const label = document.createElement("span");
+                label.className = "text-[8px] font-bold text-zinc-400 mt-1 uppercase select-none";
+                label.textContent = s.day_name;
+                barCol.appendChild(label);
+                
+                container.appendChild(barCol);
+            });
         }
 
         function escapeHTML(str) {
