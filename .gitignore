@@ -221,3 +221,11 @@ __marimo__/
 data.db
 set.py
 .DS_STORE
+
+# dev tools
+ingest.sh
+dev_prompt.md
+apply_changes.py
+llm_output.md
+deploy.sh
+digest.md
