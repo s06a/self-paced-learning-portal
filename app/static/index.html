@@ -145,7 +145,6 @@
         }
         mark.note-highlight-only {
             background-color: #fef08a !important;
-            border-bottom: 1.5px solid #eab308 !important;
             color: #1c1917 !important;
             cursor: pointer;
             transition: background-color 0.15s ease;
@@ -558,6 +557,7 @@
         };
 
         let notesOriginView = 'courses';
+        let notesOriginHash = '#/';
         let cachedNotes = [];
         let pendingSelectionText = "";
         let activeTooltipNoteId = null;
@@ -565,9 +565,10 @@
         let currentFilteredSidebarNotesLength = 0;
 
         document.addEventListener("DOMContentLoaded", () => {
-            fetchCourses();
+            window.addEventListener("hashchange", handleRouting);
+            handleRouting();
+            
             lucide.createIcons();
-            syncNotesSidebarState();
             
             // Text selection listeners for highlights
             const pane = document.getElementById("tab-pane-content");
@@ -681,68 +682,103 @@
             renderCourseGrid(filtered);
         }
 
-        async function enterCourse(courseId) {
-            state.currentCourseId = courseId;
-            state.activeView = 'module';
+        async function handleRouting() {
+            const hash = window.location.hash || "#/";
             
             document.getElementById("course-selection-screen").classList.add("hidden");
-            document.getElementById("workspace-screen").classList.remove("hidden");
-            document.getElementById("module-container").classList.remove("hidden");
-            document.getElementById("search-container").classList.add("hidden");
-
-            const course = state.courses.find(c => c.id === courseId);
-            if (course) {
-                document.getElementById("sidebar-course-title").textContent = course.title;
-                document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
-            }
-
-            const modules = await fetchCurriculum();
+            document.getElementById("workspace-screen").classList.add("hidden");
+            document.getElementById("notes-manager-screen").classList.add("hidden");
             
-            // Determine last visited module &amp; tab
+            if (hash === "#/" || hash === "#/courses" || hash === "") {
+                state.activeView = 'courses';
+                state.currentCourseId = null;
+                state.currentModuleId = null;
+                
+                document.getElementById("course-selection-screen").classList.remove("hidden");
+                const searchInput = document.getElementById("global-search");
+                if (searchInput) searchInput.value = "";
+                
+                await fetchCourses();
+                syncNotesSidebarState();
+            } 
+            else if (hash === "#/notes-manager") {
+                state.activeView = 'notes-manager';
+                document.getElementById("notes-manager-screen").classList.remove("hidden");
+                
+                const select = document.getElementById("notes-course-filter");
+                if (select) {
+                    select.innerHTML = `<option value="all">All Courses</option>`;
+                    state.courses.forEach(c => {
+                        select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
+                    });
+                }
+                
+                syncNotesSidebarState();
+                await fetchAndRenderNotes();
+            } 
+            else {
+                const match = hash.match(/^#\/course\/([^/]+)\/module\/([^/]+)$/);
+                if (match) {
+                    const courseId = match[1];
+                    const moduleId = parseInt(match[2]);
+                    
+                    state.currentCourseId = courseId;
+                    state.currentModuleId = moduleId;
+                    state.activeView = 'module';
+                    
+                    document.getElementById("workspace-screen").classList.remove("hidden");
+                    document.getElementById("module-container").classList.remove("hidden");
+                    document.getElementById("search-container").classList.add("hidden");
+                    
+                    const course = state.courses.find(c => c.id === courseId);
+                    if (course) {
+                        document.getElementById("sidebar-course-title").textContent = course.title;
+                        document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
+                    } else {
+                        await fetchCourses();
+                        const reCourse = state.courses.find(c => c.id === courseId);
+                        if (reCourse) {
+                            document.getElementById("sidebar-course-title").textContent = reCourse.title;
+                            document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
+                        }
+                    }
+                    
+                    syncNotesSidebarState();
+                    await loadModule(moduleId);
+                } else {
+                    window.location.hash = "#/";
+                }
+            }
+        }
+
+        async function enterCourse(courseId) {
             let lastModuleId = localStorage.getItem(`last_module_${courseId}`);
             let lastTab = localStorage.getItem(`last_tab_${courseId}`) || 'theory';
+            state.currentTab = lastTab;
             
-            if (!lastModuleId && modules && modules.length > 0) {
-                // If user just opened the course, it should open from first module
-                lastModuleId = modules[0].id;
-            }
-            
-            if (lastModuleId) {
-                state.currentTab = lastTab;
-                // Set sidebar notes scope to course when opening a course!
-                const scopeSelect = document.getElementById("sidebar-notes-scope");
-                if (scopeSelect) {
-                    scopeSelect.value = "course";
+            if (!lastModuleId) {
+                try {
+                    const res = await fetch(`/api/courses/${courseId}/curriculum`);
+                    const modules = await res.json();
+                    if (modules && modules.length > 0) {
+                        lastModuleId = modules[0].id;
+                    }
+                } catch (e) {
+                    lastModuleId = 1;
                 }
-                sidebarNotesLimit = 5;
-                await loadModule(parseInt(lastModuleId));
             }
             
-            // Always make sure notes sidebar is open when entering a course/workspace
-            const sidebar = document.getElementById("notes-sidebar");
-            if (sidebar) {
-                sidebar.classList.remove("hidden");
+            const scopeSelect = document.getElementById("sidebar-notes-scope");
+            if (scopeSelect) {
+                scopeSelect.value = "course";
             }
+            sidebarNotesLimit = 5;
             
-            syncNotesSidebarState();
-            await fetchAndRenderNotes();
+            window.location.hash = `#/course/${courseId}/module/${lastModuleId || 1}`;
         }
 
         function backToCourses() {
-            state.activeView = 'courses';
-            state.currentCourseId = null;
-            state.currentModuleId = null;
-            document.getElementById("global-search").value = "";
-            
-            const filterSearch = document.getElementById("course-filter-search");
-            if (filterSearch) filterSearch.value = "";
-            const sortSelect = document.getElementById("course-sort-select");
-            if (sortSelect) sortSelect.value = "name";
-            
-            document.getElementById("workspace-screen").classList.add("hidden");
-            document.getElementById("course-selection-screen").classList.remove("hidden");
-            fetchCourses();
-            syncNotesSidebarState();
+            window.location.hash = "#/";
         }
 
         async function fetchCurriculum() {
@@ -774,13 +810,13 @@
             document.getElementById("progress-count").textContent = `${completedSections} of ${totalSections} Passed`;
         }
 
-        async function selectModuleFromSidebar(id) {
+        function selectModuleFromSidebar(id) {
             const scopeSelect = document.getElementById("sidebar-notes-scope");
             if (scopeSelect) {
                 scopeSelect.value = "module";
             }
             sidebarNotesLimit = 5;
-            await loadModule(id);
+            window.location.hash = `#/course/${state.currentCourseId}/module/${id}`;
         }
 
         function renderCurriculumList(modules) {
@@ -971,7 +1007,7 @@
 
         function navigateModule(direction) {
             const nextId = state.currentModuleId + direction;
-            loadModule(nextId);
+            window.location.hash = `#/course/${state.currentCourseId}/module/${nextId}`;
         }
 
         async function handleSearch(e) {
@@ -984,7 +1020,6 @@
             }
 
             state.activeView = 'search';
-            document.getElementById("view-placeholder").classList.add("hidden");
             document.getElementById("module-container").classList.add("hidden");
             document.getElementById("search-container").classList.remove("hidden");
 
@@ -1042,11 +1077,9 @@
             lucide.createIcons();
         }
 
-        async function clickSearchResult(courseId, moduleId) {
-            // Instantly transition course scope and open specific target modules
-            await enterCourse(courseId);
-            await loadModule(moduleId);
+        function clickSearchResult(courseId, moduleId) {
             document.getElementById("global-search").value = "";
+            window.location.hash = `#/course/${courseId}/module/${moduleId}`;
         }
 
         function resetToHome() {
@@ -1425,15 +1458,18 @@
                     mainButton.classList.add("hover:bg-white");
                 }
             } else {
-                if (sidebar.classList.contains("hidden")) {
-                    if (mainButton) {
-                        mainButton.classList.remove("bg-white", "shadow-sm");
-                        mainButton.classList.add("hover:bg-white");
-                    }
-                } else {
+                const sidebarWishedOpen = localStorage.getItem("sidebar_notes_open") !== "false";
+                if (sidebarWishedOpen) {
+                    sidebar.classList.remove("hidden");
                     if (mainButton) {
                         mainButton.classList.add("bg-white", "shadow-sm");
                         mainButton.classList.remove("hover:bg-white");
+                    }
+                } else {
+                    sidebar.classList.add("hidden");
+                    if (mainButton) {
+                        mainButton.classList.remove("bg-white", "shadow-sm");
+                        mainButton.classList.add("hover:bg-white");
                     }
                 }
             }
@@ -1539,36 +1575,12 @@
         }
 
         function enterNotesManager() {
-            notesOriginView = state.activeView;
-            state.activeView = 'notes-manager';
-            
-            document.getElementById("course-selection-screen").classList.add("hidden");
-            document.getElementById("workspace-screen").classList.add("hidden");
-            document.getElementById("notes-manager-screen").classList.remove("hidden");
-            
-            const select = document.getElementById("notes-course-filter");
-            if (select) {
-                select.innerHTML = `<option value="all">All Courses</option>`;
-                state.courses.forEach(c => {
-                    select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
-                });
-            }
-            
-            syncNotesSidebarState();
-            fetchAndRenderNotes();
+            notesOriginHash = window.location.hash || "#/";
+            window.location.hash = "#/notes-manager";
         }
 
         function backFromNotes() {
-            document.getElementById("notes-manager-screen").classList.add("hidden");
-            if (notesOriginView === 'module') {
-                document.getElementById("workspace-screen").classList.remove("hidden");
-                state.activeView = 'module';
-            } else {
-                document.getElementById("course-selection-screen").classList.remove("hidden");
-                state.activeView = 'courses';
-                fetchCourses();
-            }
-            syncNotesSidebarState();
+            window.location.hash = notesOriginHash || "#/";
         }
 
         async function fetchAndRenderNotes() {
@@ -1618,7 +1630,7 @@
                 const sectionLabel = tabFriendlyNames[note.section_id] || note.section_id;
                 
                 const card = document.createElement("div");
-                card.className = "bg-white border border-zinc-200 rounded-xl p-3 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-2 h-44 cursor-pointer hover:shadow-md select-none overflow-hidden";
+                card.className = "bg-white border border-zinc-200 rounded-xl p-3 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-2 min-h-[11rem] max-h-[22rem] h-auto cursor-pointer hover:shadow-md select-none overflow-hidden";
                 card.onclick = (e) => {
                     if (e.target.closest('button') || e.target.closest('a') || e.target.closest('i')) return;
                     jumpToNoteContent(note.course_id, note.module_id, note.section_id, note.id);
@@ -1638,10 +1650,8 @@
                             <span class="text-[9px] text-zinc-400 font-mono sm:text-right shrink-0 select-none">${note.created_at}</span>
                         </div>
                         
-                        <div class="space-y-1.5 mt-2 overflow-hidden flex-1 min-h-0 break-words whitespace-pre-wrap">
-                            <div class="bg-zinc-50 border-l-2 border-amber-400 p-1.5 rounded-r text-[11px] text-zinc-800 line-clamp-3 leading-snug">
-                                "${escapeHTML(note.selected_text)}"
-                            </div>
+                        <div class="mt-2 overflow-y-auto flex-1 min-h-0 text-[11px] text-zinc-800 leading-snug break-words whitespace-pre-wrap select-text">
+                            "${escapeHTML(note.selected_text)}"
                         </div>
                     </div>
                     
@@ -1669,20 +1679,8 @@
             });
         }
 
-        async function jumpToNoteContent(courseId, moduleId, sectionId, noteId) {
-            document.getElementById("notes-manager-screen").classList.add("hidden");
-            document.getElementById("workspace-screen").classList.remove("hidden");
-            state.activeView = 'module';
-            state.currentCourseId = courseId;
+        function jumpToNoteContent(courseId, moduleId, sectionId, noteId) {
             state.currentTab = sectionId;
-            
-            const course = state.courses.find(c => c.id === courseId);
-            if (course) {
-                document.getElementById("sidebar-course-title").textContent = course.title;
-                document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
-            }
-            
-            await fetchCurriculum();
             
             const scopeSelect = document.getElementById("sidebar-notes-scope");
             if (scopeSelect) {
@@ -1690,14 +1688,14 @@
             }
             sidebarNotesLimit = 5;
             
-            await loadModule(moduleId);
+            window.location.hash = `#/course/${courseId}/module/${moduleId}`;
             
             setTimeout(() => {
                 const markEl = document.querySelector(`mark[data-note-id="${noteId}"]`);
                 if (markEl) {
                     markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-            }, 400);
+            }, 500);
         }
 
         function exportNotesMarkdown() {
@@ -1799,7 +1797,7 @@
             container.innerHTML = "";
             displayed.forEach(note => {
                 const div = document.createElement("div");
-                div.className = "bg-zinc-50 border border-zinc-200 rounded-lg p-3 relative hover:border-zinc-300 transition flex flex-col justify-between gap-2 cursor-pointer h-40 select-none hover:shadow-sm overflow-hidden";
+                div.className = "bg-zinc-50 border border-zinc-200 rounded-lg p-3 relative hover:border-zinc-300 transition flex flex-col justify-between gap-2 cursor-pointer min-h-[10rem] max-h-[18rem] h-auto select-none hover:shadow-sm overflow-hidden";
                 div.onclick = (e) => {
                     if (e.target.closest('button') || e.target.closest('a') || e.target.closest('i')) return;
                     jumpToNoteContent(note.course_id, note.module_id, note.section_id, note.id);
@@ -1818,10 +1816,8 @@
                             </div>
                         </div>
                         
-                        <div class="space-y-1.5 mt-2 overflow-hidden flex-1 min-h-0 break-words whitespace-pre-wrap">
-                            <div class="border-l-2 border-amber-400 pl-2 text-[11px] text-zinc-800 leading-snug line-clamp-3">
-                                "${escapeHTML(note.selected_text)}"
-                            </div>
+                        <div class="mt-2 overflow-y-auto flex-1 min-h-0 text-[11px] text-zinc-800 leading-snug break-words whitespace-pre-wrap select-text">
+                            "${escapeHTML(note.selected_text)}"
                         </div>
                     </div>
                     
@@ -1855,12 +1851,14 @@
 
             if (sidebar.classList.contains("hidden")) {
                 sidebar.classList.remove("hidden");
+                localStorage.setItem("sidebar_notes_open", "true");
                 if (mainButton) {
                     mainButton.classList.add("bg-white", "shadow-sm");
                     mainButton.classList.remove("hover:bg-white");
                 }
             } else {
                 sidebar.classList.add("hidden");
+                localStorage.setItem("sidebar_notes_open", "false");
                 if (mainButton) {
                     mainButton.classList.remove("bg-white", "shadow-sm");
                     mainButton.classList.add("hover:bg-white");

@@ -221,6 +221,7 @@ __marimo__/
 data.db
 set.py
 .DS_STORE
+todo.md
 
 # dev tools
 ingest.sh
