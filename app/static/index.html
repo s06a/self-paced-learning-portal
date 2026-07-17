@@ -34,7 +34,25 @@
             background: #d4d4d8;
         }
 
+        .markdown-body {
+            font-family: 'Geist', 'Inter', 'system-ui', -apple-system, sans-serif;
+        }
+
         /* Using relative em units so headers scale proportionally with parent base size */
+        .markdown-body h1 {
+            font-size: 1.8em;
+            font-weight: 800;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #09090b;
+        }
+        .markdown-body h2 {
+            font-size: 1.6em;
+            font-weight: 750;
+            margin-top: 1.75rem;
+            margin-bottom: 0.85rem;
+            color: #18181b;
+        }
         .markdown-body h3 {
             font-size: 1.4em;
             font-weight: 700;
@@ -55,33 +73,48 @@
             color: #3f3f46;
         }
         .markdown-body ul {
-            list-style-type: disc;
-            padding-left: 1.5rem;
-            margin-bottom: 1rem;
+            list-style-type: disc !important;
+            padding-left: 1.5rem !important;
+            margin-bottom: 1rem !important;
+            display: block !important;
         }
         .markdown-body ol {
-            list-style-type: decimal;
-            padding-left: 1.5rem;
-            margin-bottom: 1rem;
+            list-style-type: decimal !important;
+            padding-left: 1.5rem !important;
+            margin-bottom: 1rem !important;
+            display: block !important;
         }
         .markdown-body li {
-            margin-bottom: 0.35rem;
-            color: #3f3f46;
+            margin-bottom: 0.35rem !important;
+            color: #3f3f46 !important;
+            display: list-item !important;
+        }
+        .markdown-body blockquote {
+            border-left: 4px solid #e4e4e7;
+            padding-left: 1rem;
+            color: #71717a;
+            font-style: italic;
+            margin: 1rem 0;
+        }
+        .markdown-body hr {
+            border: 0;
+            border-top: 1px solid #e4e4e7;
+            margin: 1.5rem 0;
         }
         .markdown-body pre {
-            background-color: #09090b;
-            border: 1px solid #e4e4e7;
-            border-radius: 0.5rem;
-            padding: 1rem 4.5rem 1rem 1rem; 
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-            position: relative;
+            background-color: #09090b !important;
+            border: 1px solid #e4e4e7 !important;
+            border-radius: 0.5rem !important;
+            padding: 1rem 4.5rem 1rem 1rem !important; 
+            margin-top: 1rem !important;
+            margin-bottom: 1rem !important;
+            position: relative !important;
             
             /* Text wrapping rules to prevent horizontal scroll */
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            overflow-x: hidden;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            overflow-x: hidden !important;
         }
         .markdown-body pre code {
             background-color: transparent !important;
@@ -91,17 +124,24 @@
             color: #f4f4f5 !important;
             font-size: 0.9em !important; /* Modified to relative em to scale with controls */
             
-            white-space: pre-wrap;
-            word-break: break-word;
+            white-space: pre-wrap !important;
+            word-break: break-word !important;
         }
         .markdown-body code {
-            background-color: #f4f4f5;
-            border: 1px solid #e4e4e7;
-            color: #18181b;
-            padding: 0.125rem 0.3rem;
-            border-radius: 0.25rem;
-            font-family: monospace;
-            font-size: 0.85em; /* Scales automatically */
+            background-color: #f4f4f5 !important;
+            border: 1px solid #e4e4e7 !important;
+            color: #18181b !important;
+            padding: 0.125rem 0.3rem !important;
+            border-radius: 0.25rem !important;
+            font-family: monospace !important;
+            font-size: 0.85em !important; /* Scales automatically */
+        }
+        .markdown-body mark {
+            background-color: #fef08a !important; /* Soft yellow highlight */
+            color: #1c1917 !important;
+            padding: 0.1rem 0.25rem !important;
+            border-radius: 0.125rem !important;
+            font-weight: 500 !important;
         }
     </style>
 </head>
@@ -234,6 +274,12 @@
                         </ul>
                     </div>
                 </nav>
+
+                <!-- My Study Notes Navigation -->
+                <button onclick="toggleNotesSidebar()" class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-xs rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors border border-transparent shrink-0 mt-1">
+                    <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-zinc-500"></i>
+                    <span>Study Notes & Highlights</span>
+                </button>
             </div>
 
             <!-- Footer indicator -->
@@ -270,11 +316,15 @@
                             </div>
                             <h2 class="text-lg font-bold tracking-tight text-zinc-900" id="module-title">Module Title</h2>
                         </div>
-                        <!-- Font Size Adjusters -->
+                        <!-- Font Size & Notes Adjusters -->
                         <div class="flex items-center gap-1 bg-zinc-100 p-1 rounded-md border border-zinc-200 shrink-0 mb-0.5">
-                            <span class="text-[9px] font-bold text-zinc-500 uppercase px-1.5 select-none">Font</span>
+                            <span class="text-[9px] font-bold text-zinc-500 uppercase px-1.5 select-none font-sans">Font</span>
                             <button onclick="adjustFontSize(-1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Decrease font size">A-</button>
                             <button onclick="adjustFontSize(1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Increase font size">A+</button>
+                            <span class="text-zinc-300 px-0.5 select-none">|</span>
+                            <button id="btn-toggle-notes-sidebar" onclick="toggleNotesSidebar()" class="px-2 h-6 rounded flex items-center gap-1 text-[11px] font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Toggle Study Notes">
+                                <i data-lucide="edit-3" class="w-3 h-3"></i> <span>Notes</span>
+                            </button>
                         </div>
                     </div>
 
@@ -303,7 +353,7 @@
                             <button onclick="navigateModule(-1)" id="btn-prev-mod" class="px-3 py-1.5 border border-zinc-200 rounded-md text-[11px] hover:bg-zinc-50 text-zinc-700 font-semibold disabled:opacity-50">
                                 Previous
                             </button>
-                            <button onclick="navigateModule(1)" id="btn-next-mod" class="px-3 py-1.5 bg-zinc-900 text-white rounded-md text-[11px] hover:bg-zinc-800 font-semibold">
+                            <button onclick="navigateModule(1)" id="btn-next-mod" class="px-3 py-1.5 bg-zinc-950 text-white rounded-md text-[11px] hover:bg-zinc-800 font-semibold">
                                 Next
                             </button>
                         </div>
@@ -323,6 +373,117 @@
             </div>
 
         </main>
+
+        <!-- RIGHT SIDEBAR (Study Notes) -->
+        <aside id="notes-sidebar" class="w-80 h-full border-l border-zinc-200 bg-white flex flex-col justify-between shrink-0 overflow-hidden relative transition-all duration-300">
+            <div class="p-5 flex flex-col gap-3 overflow-hidden flex-1 font-sans">
+                
+                <!-- Sidebar Header -->
+                <div class="flex items-center justify-between shrink-0 pb-2 border-b border-zinc-200">
+                    <div class="flex items-center gap-1.5">
+                        <i data-lucide="edit-3" class="w-4 h-4 text-zinc-700"></i>
+                        <h3 class="text-xs font-bold text-zinc-900 uppercase tracking-tight">Study Notes</h3>
+                    </div>
+                    <button onclick="toggleNotesSidebar()" class="p-1 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition" title="Collapse Notes">
+                        <i data-lucide="chevrons-right" class="w-4 h-4" id="toggle-notes-icon"></i>
+                    </button>
+                </div>
+
+                <!-- Notes Filter / Scope inside Right Sidebar -->
+                <div class="flex flex-col gap-2 shrink-0">
+                    <div class="relative w-full">
+                        <i data-lucide="search" class="absolute left-2.5 top-2 w-3 h-3 text-zinc-400"></i>
+                        <input type="text" id="sidebar-notes-search" placeholder="Search notes..."
+                               class="w-full pl-8 pr-3 py-1 text-[11px] bg-zinc-50 border border-zinc-200 rounded focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900"
+                               oninput="renderSidebarNotes()">
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider select-none">Scope</span>
+                        <select id="sidebar-notes-scope" onchange="renderSidebarNotes()"
+                                class="bg-zinc-50 border border-zinc-200 rounded px-1.5 py-0.5 text-[10px] text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
+                            <option value="module" selected>Active Module</option>
+                            <option value="course">Active Track</option>
+                            <option value="all">All Tracks</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notes Scrollable List -->
+                <div class="flex-1 overflow-y-auto pr-1 min-h-0 space-y-3" id="sidebar-notes-list">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            
+            <!-- Sidebar Actions Footer -->
+            <div class="p-3 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between shrink-0 font-sans">
+                <button onclick="exportNotesMarkdown()" class="text-[10px] font-bold text-zinc-600 hover:text-zinc-900 flex items-center gap-1 select-none">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Export MD
+                </button>
+                <span class="text-[9px] text-zinc-400 font-medium">Auto-saves highlights</span>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Floating Text Selection Tooltip -->
+    <div id="text-selector-tooltip" class="hidden absolute z-50 bg-zinc-950 text-white text-[10px] rounded-md shadow-lg border border-zinc-800 flex items-center">
+        <button onclick="openAddNoteModal()" class="px-2.5 py-1.5 flex items-center gap-1 hover:bg-zinc-800 text-zinc-100 transition rounded-md font-bold uppercase tracking-wider">
+            <i data-lucide="highlighter" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Highlight / Add Note</span>
+        </button>
+    </div>
+
+    <!-- Floating Note Tooltip -->
+    <div id="note-view-tooltip" class="hidden absolute z-50 bg-zinc-950 text-white text-xs rounded-lg shadow-lg border border-zinc-800 p-3 max-w-xs flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-4 border-b border-zinc-800 pb-1.5 shrink-0">
+            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Note</span>
+            <div class="flex items-center gap-1.5">
+                <button onclick="editNoteFromTooltip()" class="text-zinc-400 hover:text-white transition" title="Edit Note">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="deleteNoteFromTooltip()" class="text-rose-400 hover:text-rose-600 transition" title="Delete Note/Highlight">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="hideNoteTooltip()" class="text-zinc-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+        </div>
+        <p id="note-tooltip-text" class="text-zinc-300 leading-normal text-[11px]"></p>
+        <span id="note-tooltip-date" class="text-[9px] text-zinc-500 text-right font-mono"></span>
+    </div>
+
+    <!-- Note Editor Modal -->
+    <div id="note-editor-modal" class="hidden fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white border border-zinc-200 rounded-xl max-w-md w-full p-5 shadow-xl flex flex-col gap-4">
+            <div class="flex justify-between items-start">
+                <h3 class="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="sticky-note" class="w-4 h-4 text-zinc-500"></i> Create Note & Highlight
+                </h3>
+                <button onclick="closeNoteModal()" class="text-zinc-400 hover:text-zinc-600 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div>
+                <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">Selected Content</span>
+                <p id="note-modal-selected-text" class="text-xs italic text-zinc-600 bg-zinc-50 p-2.5 rounded border border-zinc-150 border-l-2 border-l-amber-500 line-clamp-3 overflow-y-auto max-h-20 font-serif"></p>
+            </div>
+            
+            <div>
+                <label for="note-input-field" class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">Your Personal Note (Optional)</label>
+                <textarea id="note-input-field" placeholder="Add an insight, study question, or task reference..."
+                          class="w-full text-xs p-2 bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition h-24 resize-none"></textarea>
+            </div>
+            
+            <div class="flex justify-end gap-2 shrink-0">
+                <button onclick="closeNoteModal()" class="px-3 py-1.5 border border-zinc-200 rounded-md text-xs hover:bg-zinc-50 text-zinc-700 font-semibold">
+                    Cancel
+                </button>
+                <button id="save-note-btn" onclick="saveNote()" class="px-3 py-1.5 bg-zinc-900 text-white rounded-md text-xs hover:bg-zinc-800 font-semibold flex items-center gap-1">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i> Save & Highlight
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Interface Script Logic -->
@@ -359,9 +520,36 @@
             activeView: 'courses' // 'courses', 'module', 'search'
         };
 
+        let notesOriginView = 'courses';
+        let cachedNotes = [];
+        let pendingSelectionText = "";
+        let activeTooltipNoteId = null;
+
         document.addEventListener("DOMContentLoaded", () => {
             fetchCourses();
             lucide.createIcons();
+            
+            // Text selection listeners for highlights
+            const pane = document.getElementById("tab-pane-content");
+            if (pane) {
+                pane.addEventListener("mouseup", handleTextSelection);
+                pane.addEventListener("keyup", handleTextSelection);
+            }
+            
+            // Hide tooltips on outside clicks
+            document.addEventListener("mousedown", (e) => {
+                const tooltip = document.getElementById("note-view-tooltip");
+                if (tooltip && !tooltip.contains(e.target) && !e.target.closest('mark')) {
+                    hideNoteTooltip();
+                }
+                const selector = document.getElementById("text-selector-tooltip");
+                if (selector && !selector.contains(e.target)) {
+                    setTimeout(() => {
+                        const sel = window.getSelection().toString().trim();
+                        if (!sel) hideFloatingSelector();
+                    }, 100);
+                }
+            });
         });
 
         async function fetchCourses() {
@@ -459,6 +647,17 @@
             }
 
             await fetchCurriculum();
+            
+            // Sync notes sidebar state indicator
+            const sidebar = document.getElementById("notes-sidebar");
+            const mainButton = document.getElementById("btn-toggle-notes-sidebar");
+            if (sidebar && !sidebar.classList.contains("hidden")) {
+                if (mainButton) {
+                    mainButton.classList.add("bg-white", "shadow-sm");
+                    mainButton.classList.remove("hover:bg-white");
+                }
+            }
+            await fetchNotes();
         }
 
         function backToCourses() {
@@ -572,6 +771,7 @@
                 const modules = await curricRes.json();
                 renderCurriculumList(modules);
                 calculateProgress(modules);
+                await fetchNotes();
 
             } catch (err) {
                 console.error("Error executing module pull", err);
@@ -644,10 +844,13 @@
 
             if (state.moduleData) {
                 let markdownContent = state.moduleData[tab];
-                document.getElementById("tab-pane-content").innerHTML = marked.parse(markdownContent);
+                document.getElementById("tab-pane-content").innerHTML = renderMarkdown(markdownContent);
                 
                 // Process and attach the Copy Button to all rendered code blocks
-                addCopyButtonsToCodeBlocks();
+                addCopyBlocksToCodeBlocks();
+                
+                // Apply highlights
+                applyHighlightsForCurrentSection();
                 
                 const isSectionCompleted = state.moduleData.completed_sections.includes(tab);
                 const sectionName = tabFriendlyNames[tab];
@@ -926,6 +1129,739 @@
                     '"': '&quot;'
                 }[tag] || tag)
             );
+        }
+
+        function handleTextSelection(e) {
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+            if (!selectedText) {
+                hideFloatingSelector();
+                return;
+            }
+            const pane = document.getElementById("tab-pane-content");
+            if (!pane || !pane.contains(selection.anchorNode)) {
+                hideFloatingSelector();
+                return;
+            }
+            
+            showFloatingSelector(selection);
+        }
+
+        function showFloatingSelector(selection) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const tooltip = document.getElementById("text-selector-tooltip");
+            if (!tooltip) return;
+
+            tooltip.classList.remove("hidden");
+            const scrollX = window.scrollX || window.pageXOffset;
+            const scrollY = window.scrollY || window.pageYOffset;
+            
+            tooltip.style.left = `${rect.left + scrollX + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
+            tooltip.style.top = `${rect.top + scrollY - tooltip.offsetHeight - 8}px`;
+        }
+
+        function hideFloatingSelector() {
+            const tooltip = document.getElementById("text-selector-tooltip");
+            if (tooltip) {
+                tooltip.classList.add("hidden");
+            }
+        }
+
+        function openAddNoteModal() {
+            const selection = window.getSelection();
+            pendingSelectionText = selection.toString().trim();
+            if (!pendingSelectionText) return;
+            
+            hideFloatingSelector();
+            
+            document.getElementById("note-modal-selected-text").textContent = `"${pendingSelectionText}"`;
+            document.getElementById("note-input-field").value = "";
+            document.getElementById("note-editor-modal").classList.remove("hidden");
+            
+            const saveBtn = document.getElementById("save-note-btn");
+            if (saveBtn) {
+                saveBtn.setAttribute("onclick", "saveNote()");
+            }
+        }
+
+        function closeNoteModal() {
+            document.getElementById("note-editor-modal").classList.add("hidden");
+            const saveBtn = document.getElementById("save-note-btn");
+            if (saveBtn) {
+                saveBtn.setAttribute("onclick", "saveNote()");
+            }
+        }
+
+        async function saveNote() {
+            if (!pendingSelectionText) return;
+            const noteText = document.getElementById("note-input-field").value.trim();
+            try {
+                const res = await fetch("/api/notes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        course_id: state.currentCourseId,
+                        module_id: state.currentModuleId,
+                        section_id: state.currentTab,
+                        selected_text: pendingSelectionText,
+                        note_text: noteText
+                    })
+                });
+                if (res.ok) {
+                    closeNoteModal();
+                    window.getSelection().removeAllRanges();
+                    await fetchAndRenderNotes();
+                    if (state.currentModuleId) {
+                        await loadModule(state.currentModuleId);
+                    }
+                }
+            } catch (err) {
+                console.error("Error saving note", err);
+            }
+        }
+
+        async function applyHighlightsForCurrentSection() {
+            if (!state.currentCourseId || !state.currentModuleId || !state.currentTab) return;
+            try {
+                const res = await fetch(`/api/notes?course_id=${state.currentCourseId}&module_id=${state.currentModuleId}&section_id=${state.currentTab}`);
+                if (res.ok) {
+                    const notes = await res.json();
+                    const container = document.getElementById("tab-pane-content");
+                    notes.forEach(note => {
+                        highlightTextInElement(container, note.selected_text, note.id);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading highlights", err);
+            }
+        }
+
+        function highlightTextInElement(element, text, noteId) {
+            if (!text) return;
+            const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp("(" + escapedText + ")", "gi");
+            
+            function walk(node) {
+                if (node.nodeType === 3) {
+                    const textContent = node.nodeValue;
+                    if (regex.test(textContent)) {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = textContent.replace(regex, `<mark class="bg-amber-100 border-b border-amber-300 text-zinc-900 px-0.5 rounded cursor-pointer hover:bg-amber-200 transition-colors duration-150" data-note-id="${noteId}" onclick="showNoteTooltip(event, ${noteId})">$1</mark>`);
+                        
+                        const parent = node.parentNode;
+                        while (tempDiv.firstChild) {
+                            parent.insertBefore(tempDiv.firstChild, node);
+                        }
+                        parent.removeChild(node);
+                    }
+                } else if (node.nodeType === 1 && node.childNodes && !['SCRIPT', 'STYLE', 'BUTTON', 'PRE', 'A'].includes(node.nodeName)) {
+                    for (let i = node.childNodes.length - 1; i >= 0; i--) {
+                        walk(node.childNodes[i]);
+                    }
+                }
+            }
+            walk(element);
+        }
+
+        async function showNoteTooltip(event, noteId) {
+            event.stopPropagation();
+            activeTooltipNoteId = noteId;
+            
+            try {
+                const res = await fetch(`/api/notes`);
+                if (res.ok) {
+                    const allNotes = await res.json();
+                    const note = allNotes.find(n => n.id === noteId);
+                    if (note) {
+                        const tooltip = document.getElementById("note-view-tooltip");
+                        document.getElementById("note-tooltip-text").textContent = note.note_text || "(Highlighted text)";
+                        document.getElementById("note-tooltip-date").textContent = note.created_at;
+                        
+                        tooltip.classList.remove("hidden");
+                        
+                        const scrollX = window.scrollX || window.pageXOffset;
+                        const scrollY = window.scrollY || window.pageYOffset;
+                        const rect = event.target.getBoundingClientRect();
+                        
+                        tooltip.style.left = `${rect.left + scrollX + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
+                        tooltip.style.top = `${rect.top + scrollY - tooltip.offsetHeight - 8}px`;
+                        lucide.createIcons();
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading note for tooltip", err);
+            }
+        }
+
+        function hideNoteTooltip() {
+            const tooltip = document.getElementById("note-view-tooltip");
+            if (tooltip) {
+                tooltip.classList.add("hidden");
+            }
+            activeTooltipNoteId = null;
+        }
+
+        async function editNoteFromTooltip() {
+            if (!activeTooltipNoteId) return;
+            const noteId = activeTooltipNoteId;
+            hideNoteTooltip();
+            
+            try {
+                const res = await fetch(`/api/notes`);
+                if (res.ok) {
+                    const notes = await res.json();
+                    const note = notes.find(n => n.id === noteId);
+                    if (note) {
+                        pendingSelectionText = note.selected_text;
+                        document.getElementById("note-modal-selected-text").textContent = `"${note.selected_text}"`;
+                        document.getElementById("note-input-field").value = note.note_text;
+                        
+                        const saveBtn = document.getElementById("save-note-btn");
+                        if (saveBtn) {
+                            saveBtn.setAttribute("onclick", `updateNote(${noteId})`);
+                        }
+                        
+                        document.getElementById("note-editor-modal").classList.remove("hidden");
+                        lucide.createIcons();
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function updateNote(noteId) {
+            const noteText = document.getElementById("note-input-field").value.trim();
+            try {
+                const res = await fetch(`/api/notes/${noteId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ note_text: noteText })
+                });
+                if (res.ok) {
+                    closeNoteModal();
+                    if (state.currentModuleId) {
+                        await loadModule(state.currentModuleId);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteNoteFromTooltip() {
+            if (!activeTooltipNoteId) return;
+            const noteId = activeTooltipNoteId;
+            hideNoteTooltip();
+            if (confirm("Are you sure you want to delete this note and highlight?")) {
+                try {
+                    const res = await fetch(`/api/notes/${noteId}`, {
+                        method: "DELETE"
+                    });
+                    if (res.ok) {
+                        if (state.currentModuleId) {
+                            await loadModule(state.currentModuleId);
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        }
+
+        function enterNotesManager() {
+            notesOriginView = state.activeView;
+            
+            document.getElementById("course-selection-screen").classList.add("hidden");
+            document.getElementById("workspace-screen").classList.add("hidden");
+            document.getElementById("notes-manager-screen").classList.remove("hidden");
+            
+            const select = document.getElementById("notes-course-filter");
+            if (select) {
+                select.innerHTML = `<option value="all">All Courses</option>`;
+                state.courses.forEach(c => {
+                    select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
+                });
+            }
+            
+            fetchAndRenderNotes();
+        }
+
+        function backFromNotes() {
+            document.getElementById("notes-manager-screen").classList.add("hidden");
+            if (notesOriginView === 'module') {
+                document.getElementById("workspace-screen").classList.remove("hidden");
+                state.activeView = 'module';
+            } else {
+                document.getElementById("course-selection-screen").classList.remove("hidden");
+                state.activeView = 'courses';
+                fetchCourses();
+            }
+        }
+
+        async function fetchAndRenderNotes() {
+            try {
+                const res = await fetch("/api/notes");
+                if (res.ok) {
+                    cachedNotes = await res.json();
+                    renderNotesList();
+                }
+            } catch (err) {
+                console.error("Error retrieving notes list", err);
+            }
+        }
+
+        function renderNotesList() {
+            const container = document.getElementById("notes-list-container");
+            if (!container) return;
+            
+            const searchQuery = document.getElementById("notes-filter-search")?.value.toLowerCase().trim() || "";
+            const courseFilter = document.getElementById("notes-course-filter")?.value || "all";
+            
+            container.innerHTML = "";
+            
+            let filtered = cachedNotes;
+            if (courseFilter !== "all") {
+                filtered = filtered.filter(n => n.course_id === courseFilter);
+            }
+            if (searchQuery) {
+                filtered = filtered.filter(n => 
+                    n.selected_text.toLowerCase().includes(searchQuery) || 
+                    n.note_text.toLowerCase().includes(searchQuery)
+                );
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full p-12 text-center border border-dashed rounded-lg border-zinc-200">
+                        <p class="text-xs text-zinc-500">No notes or highlights match your filters.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            filtered.forEach(note => {
+                const course = state.courses.find(c => c.id === note.course_id);
+                const courseTitle = course ? course.title : note.course_id;
+                const sectionLabel = tabFriendlyNames[note.section_id] || note.section_id;
+                
+                const card = document.createElement("div");
+                card.className = "bg-white border border-zinc-200 rounded-xl p-4 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-3";
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-zinc-100 pb-2.5">
+                            <div>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">${escapeHTML(courseTitle)}</span>
+                                    <span class="text-zinc-300 select-none">•</span>
+                                    <span class="text-[9px] font-bold text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded">${escapeHTML(sectionLabel)}</span>
+                                </div>
+                                <h4 class="text-xs font-bold text-zinc-900 mt-1">Module ${note.module_id}</h4>
+                            </div>
+                            <span class="text-[9px] text-zinc-400 font-mono sm:text-right shrink-0 select-none">${note.created_at}</span>
+                        </div>
+                        
+                        <div class="space-y-2 mt-3">
+                            <div class="bg-zinc-50 border-l-2 border-amber-400 p-2.5 rounded-r-md text-[11px] text-zinc-600 italic font-serif">
+                                "${escapeHTML(note.selected_text)}"
+                            </div>
+                            ${note.note_text ? `
+                            <div class="text-xs text-zinc-800 bg-zinc-50/50 p-2.5 rounded-md border border-zinc-150">
+                                <span class="text-[8px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">My Note</span>
+                                <p class="whitespace-pre-wrap">${escapeHTML(note.note_text)}</p>
+                            </div>
+                            ` : `
+                            <p class="text-[10px] italic text-zinc-400">(Highlighted text)</p>
+                            `}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between pt-2 border-t border-zinc-100 mt-1 shrink-0">
+                        <button onclick="jumpToNoteContent('${note.course_id}', ${note.module_id}, '${note.section_id}', ${note.id})" 
+                                class="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-900 hover:text-zinc-600 transition uppercase tracking-wider select-none">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Jump to Content
+                        </button>
+                        
+                        <div class="flex items-center gap-2">
+                            <button onclick="editNoteFromManager(${note.id})" class="text-zinc-400 hover:text-zinc-900 p-1 transition" title="Edit Note text">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="deleteNoteFromManager(${note.id})" class="text-rose-400 hover:text-rose-600 p-1 transition" title="Delete Note and Highlight">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        async function editNoteFromManager(noteId) {
+            try {
+                const note = cachedNotes.find(n => n.id === noteId);
+                if (note) {
+                    pendingSelectionText = note.selected_text;
+                    document.getElementById("note-modal-selected-text").textContent = `"${note.selected_text}"`;
+                    document.getElementById("note-input-field").value = note.note_text;
+                    
+                    const saveBtn = document.getElementById("save-note-btn");
+                    if (saveBtn) {
+                        saveBtn.setAttribute("onclick", `updateNoteFromManager(${noteId})`);
+                    }
+                    
+                    document.getElementById("note-editor-modal").classList.remove("hidden");
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function updateNoteFromManager(noteId) {
+            const noteText = document.getElementById("note-input-field").value.trim();
+            try {
+                const res = await fetch(`/api/notes/${noteId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ note_text: noteText })
+                });
+                if (res.ok) {
+                    closeNoteModal();
+                    await fetchAndRenderNotes();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteNoteFromManager(noteId) {
+            if (confirm("Are you sure you want to delete this note and highlight?")) {
+                try {
+                    const res = await fetch(`/api/notes/${noteId}`, {
+                        method: "DELETE"
+                    });
+                    if (res.ok) {
+                        await fetchAndRenderNotes();
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        }
+
+        async function jumpToNoteContent(courseId, moduleId, sectionId, noteId) {
+            document.getElementById("notes-manager-screen").classList.add("hidden");
+            document.getElementById("workspace-screen").classList.remove("hidden");
+            state.activeView = 'module';
+            state.currentCourseId = courseId;
+            state.currentTab = sectionId;
+            
+            const course = state.courses.find(c => c.id === courseId);
+            if (course) {
+                document.getElementById("sidebar-course-title").textContent = course.title;
+                document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
+            }
+            
+            await fetchCurriculum();
+            await loadModule(moduleId);
+            
+            setTimeout(() => {
+                const markEl = document.querySelector(`mark[data-note-id="${noteId}"]`);
+                if (markEl) {
+                    markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    markEl.classList.add("ring-2", "ring-amber-500", "ring-offset-2");
+                    setTimeout(() => {
+                        markEl.classList.remove("ring-2", "ring-amber-500", "ring-offset-2");
+                    }, 3000);
+                }
+            }, 400);
+        }
+
+        function exportNotesMarkdown() {
+            if (cachedNotes.length === 0) {
+                alert("No notes available to export.");
+                return;
+            }
+            
+            let md = "# Self-Paced Study Notes & Highlights\n\n";
+            md += `Generated on: ${new Date().toLocaleString()}\n\n---\n\n`;
+            
+            const grouped = {};
+            cachedNotes.forEach(note => {
+                const course = state.courses.find(c => c.id === note.course_id);
+                const courseTitle = course ? course.title : note.course_id;
+                
+                if (!grouped[courseTitle]) {
+                    grouped[courseTitle] = [];
+                }
+                grouped[courseTitle].push(note);
+            });
+            
+            for (const [courseTitle, notes] of Object.entries(grouped)) {
+                md += `## Course: ${courseTitle}\n\n`;
+                
+                notes.forEach(note => {
+                    const sectionLabel = tabFriendlyNames[note.section_id] || note.section_id;
+                    md += `### Module ${note.module_id} - ${sectionLabel}\n`;
+                    md += `*Logged on: ${note.created_at}*\n\n`;
+                    md += `> ${note.selected_text}\n\n`;
+                    if (note.note_text) {
+                        md += `**My Note:**\n${note.note_text}\n\n`;
+                    } else {
+                        md += `*(Highlighted only, no additional notes)*\n\n`;
+                    }
+                    md += `---\n\n`;
+                });
+            }
+            
+            const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "self_paced_learning_notes.md");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        function renderMarkdown(text) {
+            if (!text) return "";
+            // Replace double equals highlight syntax: ==text== -> <mark>text</mark>
+            let processed = text.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+            return marked.parse(processed);
+        }
+
+        async function fetchAndRenderNotes() {
+            try {
+                const res = await fetch("/api/notes");
+                if (res.ok) {
+                    cachedNotes = await res.json();
+                    renderSidebarNotes();
+                }
+            } catch (err) {
+                console.error("Error retrieving notes list", err);
+            }
+        }
+
+        function renderSidebarNotes() {
+            const container = document.getElementById("sidebar-notes-list");
+            if (!container) return;
+            
+            const searchQuery = document.getElementById("sidebar-notes-search")?.value.toLowerCase().trim() || "";
+            const scope = document.getElementById("sidebar-notes-scope")?.value || "module";
+            
+            container.innerHTML = "";
+            
+            let filtered = cachedNotes;
+            
+            if (scope === "module") {
+                filtered = filtered.filter(n => n.course_id === state.currentCourseId && n.module_id === state.currentModuleId && n.section_id === state.currentTab);
+            } else if (scope === "course") {
+                filtered = filtered.filter(n => n.course_id === state.currentCourseId);
+            }
+            
+            if (searchQuery) {
+                filtered = filtered.filter(n => 
+                    n.selected_text.toLowerCase().includes(searchQuery) || 
+                    n.note_text.toLowerCase().includes(searchQuery)
+                );
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="p-4 text-center border border-dashed rounded-lg border-zinc-200">
+                        <p class="text-[11px] text-zinc-500">No matching notes or highlights found.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            filtered.forEach(note => {
+                const div = document.createElement("div");
+                div.className = "bg-zinc-50 border border-zinc-200 rounded-lg p-3 relative hover:border-zinc-300 transition flex flex-col gap-2";
+                
+                div.innerHTML = `
+                    <div class="flex items-center justify-between gap-1 border-b border-zinc-150 pb-1 shrink-0">
+                        <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider truncate max-w-[150px]">
+                            Module ${note.module_id} • ${tabFriendlyNames[note.section_id] || note.section_id}
+                        </span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="editSidebarNote(${note.id})" class="text-zinc-400 hover:text-zinc-900 transition" title="Edit Note">
+                                <i data-lucide="edit-3" class="w-3 h-3"></i>
+                            </button>
+                            <button onclick="deleteSidebarNote(${note.id})" class="text-rose-500 hover:text-rose-700 transition" title="Delete Note">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1.5">
+                        <div class="border-l-2 border-amber-400 pl-2 text-[11px] text-zinc-600 italic font-serif markdown-body leading-relaxed">
+                            ${renderMarkdown(note.selected_text)}
+                        </div>
+                        ${note.note_text ? `
+                        <div class="text-[11px] text-zinc-800 bg-white p-2 rounded border border-zinc-150 markdown-body leading-relaxed">
+                            ${renderMarkdown(note.note_text)}
+                        </div>
+                        ` : `
+                        <span class="text-[9px] italic text-zinc-400 block">(Highlighted text)</span>
+                        `}
+                    </div>
+                    
+                    <div class="text-[8px] text-zinc-400 text-right font-mono select-none">
+                        ${note.created_at}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        async function editSidebarNote(noteId) {
+            try {
+                const note = cachedNotes.find(n => n.id === noteId);
+                if (note) {
+                    pendingSelectionText = note.selected_text;
+                    document.getElementById("note-modal-selected-text").textContent = `"${note.selected_text}"`;
+                    document.getElementById("note-input-field").value = note.note_text;
+                    
+                    const saveBtn = document.getElementById("save-note-btn");
+                    if (saveBtn) {
+                        saveBtn.setAttribute("onclick", `updateSidebarNote(${noteId})`);
+                    }
+                    
+                    document.getElementById("note-editor-modal").classList.remove("hidden");
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function updateSidebarNote(noteId) {
+            const noteText = document.getElementById("note-input-field").value.trim();
+            try {
+                const res = await fetch(`/api/notes/${noteId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ note_text: noteText })
+                });
+                if (res.ok) {
+                    closeNoteModal();
+                    await fetchAndRenderNotes();
+                    if (state.currentModuleId) {
+                        await loadModule(state.currentModuleId);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteSidebarNote(noteId) {
+            if (confirm("Are you sure you want to delete this note and highlight?")) {
+                try {
+                    const res = await fetch(`/api/notes/${noteId}`, {
+                        method: "DELETE"
+                    });
+                    if (res.ok) {
+                        await fetchAndRenderNotes();
+                        if (state.currentModuleId) {
+                            await loadModule(state.currentModuleId);
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        }
+
+        function toggleNotesSidebar() {
+            const sidebar = document.getElementById("notes-sidebar");
+            const mainButton = document.getElementById("btn-toggle-notes-sidebar");
+
+            if (sidebar.classList.contains("hidden")) {
+                sidebar.classList.remove("hidden");
+                if (mainButton) {
+                    mainButton.classList.add("bg-white", "shadow-sm");
+                    mainButton.classList.remove("hover:bg-white");
+                }
+            } else {
+                sidebar.classList.add("hidden");
+                if (mainButton) {
+                    mainButton.classList.remove("bg-white", "shadow-sm");
+                    mainButton.classList.add("hover:bg-white");
+                }
+            }
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        function exportNotesMarkdown() {
+            if (cachedNotes.length === 0) {
+                alert("No notes available to export.");
+                return;
+            }
+            
+            let md = "# Self-Paced Study Notes & Highlights\n\n";
+            md += `Generated on: ${new Date().toLocaleString()}\n\n---\n\n`;
+            
+            const grouped = {};
+            cachedNotes.forEach(note => {
+                const course = state.courses.find(c => c.id === note.course_id);
+                const courseTitle = course ? course.title : note.course_id;
+                
+                if (!grouped[courseTitle]) {
+                    grouped[courseTitle] = [];
+                }
+                grouped[courseTitle].push(note);
+            });
+            
+            for (const [courseTitle, notes] of Object.entries(grouped)) {
+                md += `## Course: ${courseTitle}\n\n`;
+                
+                notes.forEach(note => {
+                    const sectionLabel = tabFriendlyNames[note.section_id] || note.section_id;
+                    md += `### Module ${note.module_id} - ${sectionLabel}\n`;
+                    md += `*Logged on: ${note.created_at}*\n\n`;
+                    md += `> ${note.selected_text}\n\n`;
+                    if (note.note_text) {
+                        md += `**My Note:**\n${note.note_text}\n\n`;
+                    } else {
+                        md += `*(Highlighted only, no additional notes)*\n\n`;
+                    }
+                    md += `---\n\n`;
+                });
+            }
+            
+            const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "self_paced_learning_notes.md");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function addCopyBlocksToCodeBlocks() {
+            addCopyButtonsToCodeBlocks();
         }
     </script>
 </body>

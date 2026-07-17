@@ -52,6 +52,17 @@ CREATE TABLE IF NOT EXISTS pomodoro (
     duration_minutes INTEGER
 );
 """)
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id TEXT,
+    module_id INTEGER,
+    section_id TEXT,
+    selected_text TEXT,
+    note_text TEXT,
+    created_at TEXT
+);
+""")
 conn.commit()
 conn.close()
 print("Database data.db verified/initialized successfully.")

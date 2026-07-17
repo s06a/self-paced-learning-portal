@@ -35,6 +35,17 @@ def init_db():
         duration_minutes INTEGER
     );
     """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        course_id TEXT,
+        module_id INTEGER,
+        section_id TEXT,
+        selected_text TEXT,
+        note_text TEXT,
+        created_at TEXT
+    );
+    """)
     conn.commit()
     conn.close()
 
@@ -251,6 +262,31 @@ def log_pomodoro(log: PomodoroLog):
     conn.close()
     return {"status": "success", "date": log.date, "duration": log.duration}
 
+class NotesSave(BaseModel):
+    notes: str
+
+@app.get("/api/courses/{course_id}/modules/{module_id}/notes")
+def get_notes(course_id: str, module_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT notes_text FROM notes WHERE course_id = ? AND module_id = ?", (course_id, module_id))
+    row = cursor.fetchone()
+    conn.close()
+    return {"notes": row["notes_text"] if row else ""}
+
+@app.post("/api/courses/{course_id}/modules/{module_id}/notes")
+def save_notes(course_id: str, module_id: int, payload: NotesSave):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO notes (course_id, module_id, notes_text)
+        VALUES (?, ?, ?)
+        ON CONFLICT(course_id, module_id) DO UPDATE SET notes_text = excluded.notes_text
+    """, (course_id, module_id, payload.notes))
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
+
 @app.get("/api/pomodoro/stats")
 def get_pomodoro_stats(dates: str = Query(...)):
     import datetime
@@ -281,5 +317,82 @@ def get_pomodoro_stats(dates: str = Query(...)):
             "minutes": totals_map.get(d_str, 0) or 0
         })
     return stats
+
+class NoteCreate(BaseModel):
+    course_id: str
+    module_id: int
+    section_id: str
+    selected_text: str
+    note_text: str = ""
+
+class NoteUpdate(BaseModel):
+    note_text: str
+
+@app.post("/api/notes")
+def create_note(note: NoteCreate):
+    import datetime
+    conn = get_db()
+    cursor = conn.cursor()
+    created_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("""
+        INSERT INTO notes (course_id, module_id, section_id, selected_text, note_text, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (note.course_id, note.module_id, note.section_id, note.selected_text, note.note_text, created_at))
+    conn.commit()
+    note_id = cursor.lastrowid
+    conn.close()
+    return {"status": "success", "note_id": note_id}
+
+@app.get("/api/notes")
+def get_notes(course_id: str = None, module_id: int = None, section_id: str = None):
+    conn = get_db()
+    cursor = conn.cursor()
+    query = "SELECT * FROM notes WHERE 1=1"
+    params = []
+    if course_id:
+        query += " AND course_id = ?"
+        params.append(course_id)
+    if module_id is not None:
+        query += " AND module_id = ?"
+        params.append(module_id)
+    if section_id:
+        query += " AND section_id = ?"
+        params.append(section_id)
+    
+    query += " ORDER BY created_at DESC"
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    output = []
+    for row in rows:
+        output.append({
+            "id": row["id"],
+            "course_id": row["course_id"],
+            "module_id": row["module_id"],
+            "section_id": row["section_id"],
+            "selected_text": row["selected_text"],
+            "note_text": row["note_text"],
+            "created_at": row["created_at"]
+        })
+    return output
+
+@app.put("/api/notes/{note_id}")
+def update_note(note_id: int, note: NoteUpdate):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE notes SET note_text = ? WHERE id = ?", (note.note_text, note_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
+
+@app.delete("/api/notes/{note_id}")
+def delete_note(note_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
 
 app.mount("/", StaticFiles(directory="app/static", html=True), name="static")
