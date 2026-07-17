@@ -642,6 +642,41 @@
                     }
                 });
             }
+
+            // Scroll mid content when scrolling anywhere in the mid-viewport between sidebars
+            const contentViewport = document.getElementById("content-viewport");
+            if (contentViewport) {
+                contentViewport.addEventListener("wheel", (e) => {
+                    let activeScrollEl = null;
+                    if (state.activeView === 'module') {
+                        activeScrollEl = document.getElementById("tab-pane-content");
+                    } else if (state.activeView === 'search') {
+                        activeScrollEl = document.getElementById("search-results-list");
+                    }
+                    
+                    if (!activeScrollEl) return;
+                    
+                    let current = e.target;
+                    let handled = false;
+                    while (current && current !== contentViewport) {
+                        if (current === activeScrollEl) {
+                            handled = true;
+                            break;
+                        }
+                        const style = window.getComputedStyle(current);
+                        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+                            handled = true;
+                            break;
+                        }
+                        current = current.parentNode;
+                    }
+                    
+                    if (!handled) {
+                        activeScrollEl.scrollTop += e.deltaY;
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            }
             
             // Hide tooltips on outside clicks
             document.addEventListener("mousedown", (e) => {
@@ -973,7 +1008,7 @@
                 if (!code) return;
                 
                 const btn = document.createElement("button");
-                btn.className = "absolute top-2.5 right-2.5 p-1.5 rounded bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all focus:outline-none flex items-center gap-1 text-[10px] font-semibold border border-zinc-700/50 select-none z-10";
+                btn.className = "copy-code-btn absolute top-2.5 right-2.5 p-1.5 rounded bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all focus:outline-none flex items-center gap-1 text-[10px] font-semibold border border-zinc-700/50 select-none z-10";
                 btn.title = "Copy Code";
                 btn.innerHTML = `<i data-lucide="copy" class="w-3 h-3"></i> <span>Copy</span>`;
                 
@@ -1027,8 +1062,10 @@
                 // Process and attach the Copy Button to all rendered code blocks
                 addCopyBlocksToCodeBlocks();
                 
-                // Apply highlights
-                applyHighlightsForCurrentSection();
+                // Apply highlights and then scroll to any pending note
+                applyHighlightsForCurrentSection().then(() => {
+                    scrollToPendingNote();
+                });
                 
                 const isSectionCompleted = state.moduleData.completed_sections.includes(tab);
                 const sectionName = tabFriendlyNames[tab];
@@ -1351,14 +1388,36 @@
             }
         }
 
-        function getSelectionCharacterOffsetWithin(element) {
+        function getSelectionCharacterOffsetWithin(container) {
             const selection = window.getSelection();
             if (selection.rangeCount === 0) return 0;
             const range = selection.getRangeAt(0);
-            const preCeedRange = range.cloneRange();
-            preCeedRange.selectNodeContents(element);
-            preCeedRange.setEnd(range.startContainer, range.startOffset);
-            return preCeedRange.toString().length;
+            const startNode = range.startContainer;
+            const startOffset = range.startOffset;
+
+            const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+                acceptNode: (node) => {
+                    const parent = node.parentNode;
+                    if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    if (node.parentElement && node.parentElement.closest('.copy-code-btn')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }, false);
+
+            let offset = 0;
+            let node;
+            while (node = walk.nextNode()) {
+                if (node === startNode) {
+                    offset += startOffset;
+                    break;
+                }
+                offset += node.nodeValue.length;
+            }
+            return offset;
         }
 
         async function addHighlightDirectly() {
@@ -1377,6 +1436,9 @@
                 acceptNode: (node) => {
                     const parent = node.parentNode;
                     if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    if (node.parentElement && node.parentElement.closest('.copy-code-btn')) {
                         return NodeFilter.FILTER_REJECT;
                     }
                     return NodeFilter.FILTER_ACCEPT;
@@ -1503,44 +1565,47 @@
         function applyAllSectionHighlights(container, notes) {
             if (!container || !notes || notes.length === 0) return;
 
-            // 1. Walk the DOM to gather all original text nodes
-            const textNodes = [];
-            const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
-                acceptNode: (node) => {
-                    const parent = node.parentNode;
-                    if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
-                        return NodeFilter.FILTER_REJECT;
-                    }
-                    return NodeFilter.FILTER_ACCEPT;
-                }
-            }, false);
-
-            let node;
-            while (node = walk.nextNode()) {
-                textNodes.push(node);
-            }
-
-            let aggregateText = "";
-            const mappings = [];
-
-            for (const tNode of textNodes) {
-                const val = tNode.nodeValue;
-                const startInAggregate = aggregateText.length;
-                aggregateText += val;
-                mappings.push({
-                    node: tNode,
-                    length: val.length,
-                    startInAggregate: startInAggregate
-                });
-            }
-
-            // 2. Identify match index and segment boundaries for each highlight
-            const plannedHighlights = [];
-
+            // Process each note sequentially to ensure text node splits are correctly recaptured
             notes.forEach(note => {
                 const targetText = note.selected_text;
                 if (!targetText) return;
 
+                // 1. Walk the DOM to gather current text nodes
+                const textNodes = [];
+                const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+                    acceptNode: (node) => {
+                        const parent = node.parentNode;
+                        if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        if (node.parentElement && node.parentElement.closest('.copy-code-btn')) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                }, false);
+
+                let node;
+                while (node = walk.nextNode()) {
+                    textNodes.push(node);
+                }
+
+                let aggregateText = "";
+                const mappings = [];
+
+                for (const tNode of textNodes) {
+                    const val = tNode.nodeValue;
+                    const startInAggregate = aggregateText.length;
+                    aggregateText += val;
+                    mappings.push({
+                        node: tNode,
+                        length: val.length,
+                        startInAggregate: startInAggregate
+                    });
+                }
+
+                // 2. Identify match index and segment boundaries for this highlight
+                const plannedHighlights = [];
                 if (targetText.includes("\n")) {
                     const lines = targetText.split(/\r?\n/);
                     lines.forEach(line => {
@@ -1568,64 +1633,64 @@
                         });
                     }
                 }
-            });
 
-            // 3. Sort highlights descending by matchIndex (right to left rendering)
-            plannedHighlights.sort((a, b) => b.matchIndex - a.matchIndex);
+                // Sort planned highlights descending by matchIndex (right to left rendering)
+                plannedHighlights.sort((a, b) => b.matchIndex - a.matchIndex);
 
-            // 4. Safely apply highlights in reverse order
-            plannedHighlights.forEach(hl => {
-                const matchIndex = hl.matchIndex;
-                const matchLength = hl.matchLength;
-                const matchEnd = matchIndex + matchLength;
+                // 3. Safely apply highlights in reverse order
+                plannedHighlights.forEach(hl => {
+                    const matchIndex = hl.matchIndex;
+                    const matchLength = hl.matchLength;
+                    const matchEnd = matchIndex + matchLength;
 
-                const nodesToWrap = [];
-                for (const map of mappings) {
-                    const nodeStart = map.startInAggregate;
-                    const nodeEnd = nodeStart + map.length;
+                    const nodesToWrap = [];
+                    for (const map of mappings) {
+                        const nodeStart = map.startInAggregate;
+                        const nodeEnd = nodeStart + map.length;
 
-                    if (nodeEnd > matchIndex && nodeStart < matchEnd) {
-                        const intersectStart = Math.max(nodeStart, matchIndex);
-                        const intersectEnd = Math.min(nodeEnd, matchEnd);
-                        nodesToWrap.push({
-                            node: map.node,
-                            startOffset: intersectStart - nodeStart,
-                            endOffset: intersectEnd - nodeStart
-                        });
-                    }
-                }
-
-                for (let i = nodesToWrap.length - 1; i >= 0; i--) {
-                    const item = nodesToWrap[i];
-                    const tNode = item.node;
-                    const parent = tNode.parentNode;
-                    if (!parent) continue;
-
-                    const val = tNode.nodeValue;
-                    const beforeVal = val.substring(0, item.startOffset);
-                    const matchVal = val.substring(item.startOffset, item.endOffset);
-                    const afterVal = val.substring(item.endOffset);
-
-                    if (!matchVal.trim()) {
-                        continue;
+                        if (nodeEnd > matchIndex && nodeStart < matchEnd) {
+                            const intersectStart = Math.max(nodeStart, matchIndex);
+                            const intersectEnd = Math.min(nodeEnd, matchEnd);
+                            nodesToWrap.push({
+                                node: map.node,
+                                startOffset: intersectStart - nodeStart,
+                                endOffset: intersectEnd - nodeStart
+                            });
+                        }
                     }
 
-                    const fragment = document.createDocumentFragment();
-                    if (beforeVal) {
-                        fragment.appendChild(document.createTextNode(beforeVal));
-                    }
-                    const mark = document.createElement('mark');
-                    mark.className = "note-highlight-only rounded px-0.5 transition-colors duration-150";
-                    mark.setAttribute('data-note-id', hl.noteId);
-                    mark.onclick = (event) => showNoteTooltip(event, hl.noteId);
-                    mark.appendChild(document.createTextNode(matchVal));
-                    fragment.appendChild(mark);
-                    if (afterVal) {
-                        fragment.appendChild(document.createTextNode(afterVal));
-                    }
+                    for (let i = nodesToWrap.length - 1; i >= 0; i--) {
+                        const item = nodesToWrap[i];
+                        const tNode = item.node;
+                        const parent = tNode.parentNode;
+                        if (!parent) continue;
 
-                    parent.replaceChild(fragment, tNode);
-                }
+                        const val = tNode.nodeValue;
+                        const beforeVal = val.substring(0, item.startOffset);
+                        const matchVal = val.substring(item.startOffset, item.endOffset);
+                        const afterVal = val.substring(item.endOffset);
+
+                        if (!matchVal.trim()) {
+                            continue;
+                        }
+
+                        const fragment = document.createDocumentFragment();
+                        if (beforeVal) {
+                            fragment.appendChild(document.createTextNode(beforeVal));
+                        }
+                        const mark = document.createElement('mark');
+                        mark.className = "note-highlight-only rounded px-0.5 transition-colors duration-150";
+                        mark.setAttribute('data-note-id', hl.noteId);
+                        mark.onclick = (event) => showNoteTooltip(event, hl.noteId);
+                        mark.appendChild(document.createTextNode(matchVal));
+                        fragment.appendChild(mark);
+                        if (afterVal) {
+                            fragment.appendChild(document.createTextNode(afterVal));
+                        }
+
+                        parent.replaceChild(fragment, tNode);
+                    }
+                });
             });
         }
 
@@ -1860,6 +1925,16 @@
             });
         }
 
+        function scrollToPendingNote() {
+            if (!state.pendingScrollNoteId) return;
+            const noteId = state.pendingScrollNoteId;
+            const markEl = document.querySelector(`mark[data-note-id="${noteId}"]`);
+            if (markEl) {
+                markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                state.pendingScrollNoteId = null;
+            }
+        }
+
         function jumpToNoteContent(courseId, moduleId, sectionId, noteId) {
             state.currentTab = sectionId;
             
@@ -1869,23 +1944,14 @@
             }
             sidebarNotesLimit = 5;
             
+            state.pendingScrollNoteId = noteId;
+            
             const targetHash = `#/course/${courseId}/module/${moduleId}`;
             if (window.location.hash === targetHash) {
                 switchTab(sectionId);
-                setTimeout(() => {
-                    const markEl = document.querySelector(`mark[data-note-id="${noteId}"]`);
-                    if (markEl) {
-                        markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }, 100);
+                scrollToPendingNote();
             } else {
                 window.location.hash = targetHash;
-                setTimeout(() => {
-                    const markEl = document.querySelector(`mark[data-note-id="${noteId}"]`);
-                    if (markEl) {
-                        markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }, 500);
             }
         }
 
