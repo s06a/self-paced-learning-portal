@@ -302,18 +302,6 @@
                         </ul>
                     </div>
                 </nav>
-
-                <!-- My Study Notes Navigation -->
-                <div class="flex flex-col gap-1 shrink-0 mt-1">
-                    <button id="btn-workspace-toggle-notes" onclick="toggleNotesSidebar()" class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-xs rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors border border-transparent">
-                        <i data-lucide="sidebar" class="w-3.5 h-3.5 text-zinc-500"></i>
-                        <span>Toggle Notes Sidebar</span>
-                    </button>
-                    <button onclick="enterNotesManager()" class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-xs rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors border border-transparent">
-                        <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-zinc-500"></i>
-                        <span>All Notes Manager</span>
-                    </button>
-                </div>
             </div>
 
             <!-- Footer indicator -->
@@ -464,8 +452,8 @@
                         <i data-lucide="edit-3" class="w-4 h-4 text-zinc-700"></i>
                         <h3 class="text-xs font-bold text-zinc-900 uppercase tracking-tight">Study Notes</h3>
                     </div>
-                    <button onclick="toggleNotesSidebar()" class="p-1 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition" title="Collapse Notes">
-                        <i data-lucide="chevrons-right" class="w-4 h-4" id="toggle-notes-icon"></i>
+                    <button onclick="enterNotesManager()" class="p-1 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition" title="Go to Notes Manager">
+                        <i data-lucide="sticky-note" class="w-4 h-4"></i>
                     </button>
                 </div>
 
@@ -1340,18 +1328,38 @@
         function highlightTextInElement(element, text, noteId, hasNoteText) {
             if (!text) return;
             
+            // Split by newlines to robustly match multi-line / multi-paragraph selections
+            const segments = text.split(/\r?\n/)
+                                 .map(s => s.trim())
+                                 .filter(s => s.length > 3);
+            
+            if (segments.length === 0) return;
+            
             function walk(node) {
                 if (node.nodeType === 3) {
                     const textContent = node.nodeValue;
                     const lowerText = textContent.toLowerCase();
-                    const lowerSearch = text.toLowerCase();
-                    if (lowerText.includes(lowerSearch)) {
+                    
+                    // Check if any segment matches this text node
+                    let matchedSegment = null;
+                    let idx = -1;
+                    
+                    for (const seq of segments) {
+                        const lowerSearch = seq.toLowerCase();
+                        idx = lowerText.indexOf(lowerSearch);
+                        if (idx !== -1) {
+                            matchedSegment = seq;
+                            break;
+                        }
+                    }
+                    
+                    if (matchedSegment && idx !== -1) {
                         const parent = node.parentNode;
                         if (parent && parent.tagName !== 'MARK' && parent.tagName !== 'SCRIPT' && parent.tagName !== 'STYLE' && parent.tagName !== 'PRE' && parent.tagName !== 'CODE') {
                             const fragments = document.createDocumentFragment();
                             let lastIdx = 0;
-                            let idx = lowerText.indexOf(lowerSearch);
-                            while (idx !== -1) {
+                            
+                            while (idx !== -1 && matchedSegment) {
                                 if (idx > lastIdx) {
                                     fragments.appendChild(document.createTextNode(textContent.substring(lastIdx, idx)));
                                 }
@@ -1361,10 +1369,22 @@
                                     : "note-highlight-only rounded px-0.5 transition-colors duration-150";
                                 mark.setAttribute('data-note-id', noteId);
                                 mark.onclick = (event) => showNoteTooltip(event, noteId);
-                                mark.appendChild(document.createTextNode(textContent.substring(idx, idx + text.length)));
+                                mark.appendChild(document.createTextNode(textContent.substring(idx, idx + matchedSegment.length)));
                                 fragments.appendChild(mark);
-                                lastIdx = idx + text.length;
-                                idx = lowerText.indexOf(lowerSearch, lastIdx);
+                                lastIdx = idx + matchedSegment.length;
+                                
+                                let nextIdx = -1;
+                                let nextSegment = null;
+                                for (const seq of segments) {
+                                    const lowerSearch = seq.toLowerCase();
+                                    const tempIdx = textContent.toLowerCase().indexOf(lowerSearch, lastIdx);
+                                    if (tempIdx !== -1 && (nextIdx === -1 || tempIdx < nextIdx)) {
+                                        nextIdx = tempIdx;
+                                        nextSegment = seq;
+                                    }
+                                }
+                                idx = nextIdx;
+                                matchedSegment = nextSegment;
                             }
                             if (lastIdx < textContent.length) {
                                 fragments.appendChild(document.createTextNode(textContent.substring(lastIdx)));
@@ -1623,7 +1643,7 @@
                 const sectionLabel = tabFriendlyNames[note.section_id] || note.section_id;
                 
                 const card = document.createElement("div");
-                card.className = "bg-white border border-zinc-200 rounded-xl p-4 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-3 h-64 cursor-pointer hover:shadow-md select-none";
+                card.className = "bg-white border border-zinc-200 rounded-xl p-3 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-2 h-44 cursor-pointer hover:shadow-md select-none overflow-hidden";
                 card.onclick = (e) => {
                     if (e.target.closest('button') || e.target.closest('a') || e.target.closest('i')) return;
                     jumpToNoteContent(note.course_id, note.module_id, note.section_id, note.id);
@@ -1631,7 +1651,7 @@
                 
                 card.innerHTML = `
                     <div class="flex-1 flex flex-col min-h-0">
-                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-zinc-100 pb-2.5 shrink-0">
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-zinc-100 pb-2 shrink-0">
                             <div>
                                 <div class="flex items-center gap-1.5 flex-wrap">
                                     <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">${escapeHTML(courseTitle)}</span>
@@ -1643,17 +1663,16 @@
                             <span class="text-[9px] text-zinc-400 font-mono sm:text-right shrink-0 select-none">${note.created_at}</span>
                         </div>
                         
-                        <div class="space-y-2 mt-3 overflow-y-auto pr-1 flex-1 min-h-0 break-words whitespace-pre-wrap">
-                            <div class="bg-zinc-50 border-l-2 border-amber-400 p-2.5 rounded-r-md text-[11px] text-zinc-600 italic font-serif">
+                        <div class="space-y-1.5 mt-2 overflow-hidden flex-1 min-h-0 break-words whitespace-pre-wrap">
+                            <div class="bg-zinc-50 border-l-2 border-amber-400 p-1.5 rounded-r text-[10px] text-zinc-600 italic font-serif line-clamp-2 leading-snug">
                                 "${escapeHTML(note.selected_text)}"
                             </div>
                             ${note.note_text ? `
-                            <div class="text-xs text-zinc-800 bg-zinc-50/50 p-2.5 rounded-md border border-zinc-150">
-                                <span class="text-[8px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">My Note</span>
-                                <p class="whitespace-pre-wrap">${escapeHTML(note.note_text)}</p>
+                            <div class="text-[11px] text-zinc-800 bg-zinc-50/50 px-2 py-1 rounded border border-zinc-150 line-clamp-2 leading-tight">
+                                ${escapeHTML(note.note_text)}
                             </div>
                             ` : `
-                            <p class="text-[10px] italic text-zinc-400">(Highlighted text)</p>
+                            <p class="text-[9px] italic text-zinc-400">(Highlighted text)</p>
                             `}
                         </div>
                     </div>
@@ -1852,7 +1871,7 @@
             
             filtered.forEach(note => {
                 const div = document.createElement("div");
-                div.className = "bg-zinc-50 border border-zinc-200 rounded-lg p-3 relative hover:border-zinc-300 transition flex flex-col justify-between gap-2 cursor-pointer h-48 select-none hover:shadow-sm";
+                div.className = "bg-zinc-50 border border-zinc-200 rounded-lg p-3 relative hover:border-zinc-300 transition flex flex-col justify-between gap-2 cursor-pointer h-40 select-none hover:shadow-sm overflow-hidden";
                 div.onclick = (e) => {
                     if (e.target.closest('button') || e.target.closest('a') || e.target.closest('i')) return;
                     jumpToNoteContent(note.course_id, note.module_id, note.section_id, note.id);
@@ -1874,12 +1893,12 @@
                             </div>
                         </div>
                         
-                        <div class="space-y-1.5 mt-2 overflow-y-auto pr-1 flex-1 min-h-0 break-words whitespace-pre-wrap">
-                            <div class="border-l-2 border-amber-400 pl-2 text-[11px] text-zinc-600 italic font-serif leading-relaxed">
+                        <div class="space-y-1.5 mt-2 overflow-hidden flex-1 min-h-0 break-words whitespace-pre-wrap">
+                            <div class="border-l-2 border-amber-400 pl-2 text-[10px] text-zinc-600 italic font-serif leading-snug line-clamp-2">
                                 "${escapeHTML(note.selected_text)}"
                             </div>
                             ${note.note_text ? `
-                            <div class="text-[11px] text-zinc-800 bg-white p-2 rounded border border-zinc-150 leading-relaxed">
+                            <div class="text-[10px] text-zinc-800 bg-white p-1.5 rounded border border-zinc-150 leading-snug line-clamp-2">
                                 ${escapeHTML(note.note_text)}
                             </div>
                             ` : `
