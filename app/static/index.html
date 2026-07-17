@@ -155,6 +155,13 @@
         mark.note-highlight-only:hover {
             background-color: #fde047 !important;
         }
+        mark.note-highlight-only mark.note-highlight-only {
+            background-color: #fcd34d !important; /* Slightly darker yellow for nested highlights */
+            outline: 1px dashed rgba(0, 0, 0, 0.15);
+        }
+        mark.note-highlight-only mark.note-highlight-only:hover {
+            background-color: #fbbf24 !important;
+        }
     </style>
 </head>
 <body class="bg-zinc-50 text-zinc-900 min-h-screen flex flex-row antialiased overflow-hidden h-screen w-screen">
@@ -1385,8 +1392,11 @@
             const selection = window.getSelection();
             if (selection.rangeCount === 0) return 0;
             const range = selection.getRangeAt(0);
-            const startNode = range.startContainer;
-            const startOffset = range.startOffset;
+
+            // Create a range starting from the container start to the user's selection start point
+            const preRange = document.createRange();
+            preRange.setStart(container, 0);
+            preRange.setEnd(range.startContainer, range.startOffset);
 
             const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
                 acceptNode: (node) => {
@@ -1404,11 +1414,27 @@
             let offset = 0;
             let node;
             while (node = walk.nextNode()) {
-                if (node === startNode) {
-                    offset += startOffset;
+                const nodeRange = document.createRange();
+                nodeRange.selectNode(node);
+
+                // Check if selection start lies before this text node
+                const endToStart = preRange.compareBoundaryPoints(Range.END_TO_START, nodeRange);
+                if (endToStart < 0) {
                     break;
                 }
-                offset += node.nodeValue.length;
+
+                // Check if selection start lies after this text node
+                const ending = preRange.compareBoundaryPoints(Range.END_TO_END, nodeRange);
+                if (ending >= 0) {
+                    offset += node.nodeValue.length;
+                } else {
+                    // Selection start is inside this text node
+                    const tempRange = document.createRange();
+                    tempRange.setStart(node, 0);
+                    tempRange.setEnd(preRange.endContainer, preRange.endOffset);
+                    offset += tempRange.toString().length;
+                    break;
+                }
             }
             return offset;
         }
@@ -1599,32 +1625,14 @@
 
                 // 2. Identify match index and segment boundaries for this highlight
                 const plannedHighlights = [];
-                if (targetText.includes("\n")) {
-                    const lines = targetText.split(/\r?\n/);
-                    lines.forEach(line => {
-                        const trimmed = line.trim();
-                        if (trimmed.length >= 2) {
-                            const occ = note.occurrence_index || 0;
-                            const { matchIndex, matchLength } = findNthMatch(aggregateText, trimmed, occ);
-                            if (matchIndex !== -1) {
-                                plannedHighlights.push({
-                                    noteId: note.id,
-                                    matchIndex,
-                                    matchLength
-                                });
-                            }
-                        }
+                const occ = note.occurrence_index || 0;
+                const { matchIndex, matchLength } = findNthMatch(aggregateText, targetText, occ);
+                if (matchIndex !== -1) {
+                    plannedHighlights.push({
+                        noteId: note.id,
+                        matchIndex,
+                        matchLength
                     });
-                } else {
-                    const occ = note.occurrence_index || 0;
-                    const { matchIndex, matchLength } = findNthMatch(aggregateText, targetText, occ);
-                    if (matchIndex !== -1) {
-                        plannedHighlights.push({
-                            noteId: note.id,
-                            matchIndex,
-                            matchLength
-                        });
-                    }
                 }
 
                 // Sort planned highlights descending by matchIndex (right to left rendering)
