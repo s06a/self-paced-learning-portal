@@ -20,8 +20,12 @@ A lightweight, self-hosted learning portal for self-paced study in DevOps, SRE, 
 
 * **Zero-Config Isolation:** Automatically bootstraps and runs within a local `.venv` virtual environment.
 * **Dynamic Course Loading:** Automatically loads any curriculum defined in Python configuration files inside the `/courses` directory.
-* **Persistent Progress Tracking:** Saves your completion states locally using a SQLite database.
-* **Unified Search:** Searches across all active curricula and displays course-mapped matches.
+* **Persistent Progress Tracking:** Saves completion states across lesson tabs (Core Concepts, Command Reference, Real-World Examples, Hands-On Lab, and Interview Q&As) locally using a SQLite database.
+* **Local Highlight & Study Notes Engine:** Select any text within a curriculum pane to instantly highlight and anchor it. Notes and highlights are cataloged with custom occurrence indicators.
+* **Dedicated Notes Manager:** Access, filter, search, and export compiled highlights as structured Markdown files.
+* **Focus (Pomodoro) Tracker:** Integrated study timer on the workspace with a dashboard 7-day visualization to track daily minutes logged.
+* **Unified Search:** Global search across active curricula to find course-mapped matches instantly.
+* **Workspace Controls:** Includes a collapsible study notes sidebar, copy buttons on preformatted code blocks, and direct workspace font-size scaling adjustments.
 
 ## How to Run
 
