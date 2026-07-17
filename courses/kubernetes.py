@@ -1,6 +1,6 @@
 # Kubernetes Course Definition
 COURSE_ID = "kubernetes"
-COURSE_TITLE = "Kubernetes Administrator (CKA) (Not Completed)"
+COURSE_TITLE = "Kubernetes Administrator (CKA) (In Progress)"
 COURSE_DESCRIPTION = "Explore production container orchestration, declarative microservices deployments, service discovery networks, and ingress traffic controllers."
 
 CURRICULUM_DATA = [

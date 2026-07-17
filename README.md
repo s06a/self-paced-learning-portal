@@ -3,6 +3,7 @@
 A lightweight, self-hosted learning portal for self-paced study in DevOps, SRE, and software development. 
 
 ## Courses
+- Docker junior, mid, and senior levels
 - Docker Certified Associate (DCA)
 - Kubernetes Administrator (CKA) (In Progress)
 - ...
