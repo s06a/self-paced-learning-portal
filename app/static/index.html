@@ -295,12 +295,6 @@
                     </div>
                 </nav>
             </div>
-
-            <!-- Footer indicator -->
-            <div class="p-3 border-t border-zinc-200 bg-zinc-50 text-[10px] text-zinc-400 text-center flex items-center justify-between shrink-0">
-                <span id="lbl-syllabus-standard">Syllabus Standard</span>
-                <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span> Engine Online</span>
-            </div>
         </aside>
 
         <!-- MAIN LAYOUT WRAPPER (Center View) -->
@@ -596,7 +590,6 @@
                     const course = state.courses.find(c => c.id === courseId);
                     if (course) {
                         document.getElementById("sidebar-course-title").textContent = course.title;
-                        document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
                     }
                     
                     state.currentCourseId = courseId;
@@ -812,13 +805,11 @@
                     const course = state.courses.find(c => c.id === courseId);
                     if (course) {
                         document.getElementById("sidebar-course-title").textContent = course.title;
-                        document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
                     } else {
                         await fetchCourses();
                         const reCourse = state.courses.find(c => c.id === courseId);
                         if (reCourse) {
                             document.getElementById("sidebar-course-title").textContent = reCourse.title;
-                            document.getElementById("lbl-syllabus-standard").textContent = courseId === 'docker' ? "DCA Compliant" : "CKA Compliant";
                         }
                     }
                     
