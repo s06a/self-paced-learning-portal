@@ -1046,7 +1046,9 @@
 
             if (state.moduleData) {
                 let markdownContent = state.moduleData[tab];
-                document.getElementById("tab-pane-content").innerHTML = renderMarkdown(markdownContent);
+                const pane = document.getElementById("tab-pane-content");
+                pane.innerHTML = renderMarkdown(markdownContent);
+                pane.scrollTop = 0;
                 
                 // Process and attach the Copy Button to all rendered code blocks
                 addCopyBlocksToCodeBlocks();
