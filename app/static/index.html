@@ -420,7 +420,7 @@
 
         <!-- Note Cards Grid (Scrollable) -->
         <div class="flex-1 overflow-y-auto pr-1">
-            <div id="notes-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div id="notes-list-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <!-- Note cards loaded here dynamically -->
             </div>
         </div>
@@ -1680,41 +1680,28 @@
         }
 
         function getNoteCardHTML(note, isSidebar = false) {
-            const course = state.courses.find(c => c.id === note.course_id);
-            const courseTitle = course ? course.title : note.course_id;
-            const sectionLabel = tabFriendlyNames[note.section_id] || note.section_id;
             const cleanedText = cleanSelectedTextForCard(note.selected_text);
             const deleteFn = isSidebar ? `deleteSidebarNote(${note.id})` : `deleteNoteFromManager(${note.id})`;
 
             return `
-                <div class="flex-1 flex flex-col min-h-0">
-                    <div class="flex items-start justify-between gap-2 border-b border-zinc-100 pb-1 shrink-0">
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider truncate max-w-[120px]">${escapeHTML(courseTitle)}</span>
-                                <span class="text-zinc-300 select-none">•</span>
-                                <span class="text-[9px] font-bold text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded truncate max-w-[100px]">${escapeHTML(sectionLabel)}</span>
-                            </div>
-                            <h4 class="text-[10px] font-bold text-zinc-900 mt-0.5">Module ${note.module_id}</h4>
-                        </div>
-                        <span class="text-[8px] text-zinc-400 font-mono text-right shrink-0 select-none mt-0.5">${note.created_at}</span>
-                    </div>
-                    
-                    <div class="mt-1 text-[11px] text-zinc-700 leading-snug break-words whitespace-normal select-text line-clamp-2" title="${escapeHTML(note.selected_text)}">
+                <div class="flex-1 flex flex-col justify-between min-h-0 h-full">
+                    <!-- Text Area with High Vertical Space & Readability -->
+                    <div class="flex-1 text-[11px] text-zinc-700 leading-relaxed select-text font-medium text-left break-words whitespace-normal overflow-y-auto pr-1 mb-2" title="${escapeHTML(note.selected_text)}">
                         "${escapeHTML(cleanedText)}"
                     </div>
-                </div>
-                
-                <div class="flex items-center justify-between pt-1 border-t border-zinc-100 mt-1 shrink-0">
-                    <button onclick="event.stopPropagation(); jumpToNoteContent('${note.course_id}', ${note.module_id}, '${note.section_id}', ${note.id})" 
-                            class="inline-flex items-center gap-1 text-[9px] font-bold text-zinc-900 hover:text-zinc-600 transition uppercase tracking-wider select-none">
-                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Jump to Content
-                    </button>
                     
-                    <div class="flex items-center gap-2">
-                        <button onclick="event.stopPropagation(); ${deleteFn}" class="text-rose-400 hover:text-rose-600 p-0.5 transition" title="Delete Highlight">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <!-- Bottom Controls Footer -->
+                    <div class="flex items-center justify-between pt-2 border-t border-zinc-100 shrink-0">
+                        <button onclick="event.stopPropagation(); jumpToNoteContent('${note.course_id}', ${note.module_id}, '${note.section_id}', ${note.id})" 
+                                class="inline-flex items-center gap-1 text-[9px] font-bold text-zinc-900 hover:text-zinc-600 transition uppercase tracking-wider select-none">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Jump to Content
                         </button>
+                        
+                        <div class="flex items-center gap-2">
+                            <button onclick="event.stopPropagation(); ${deleteFn}" class="text-rose-500 hover:text-rose-700 p-0.5 transition" title="Delete Highlight">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1750,7 +1737,7 @@
             
             filtered.forEach(note => {
                 const card = document.createElement("div");
-                card.className = "bg-white border border-zinc-200 rounded-xl p-2.5 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-1 h-28 cursor-pointer hover:shadow-md select-none overflow-hidden";
+                card.className = "bg-white border border-zinc-200 rounded-xl p-3 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-1 w-full max-w-[270px] h-36 cursor-pointer hover:shadow-md select-none overflow-hidden mx-auto";
                 card.onclick = (e) => {
                     if (e.target.closest('button') || e.target.closest('a') || e.target.closest('i')) return;
                     jumpToNoteContent(note.course_id, note.module_id, note.section_id, note.id);
@@ -1896,7 +1883,7 @@
             container.innerHTML = "";
             displayed.forEach(note => {
                 const div = document.createElement("div");
-                div.className = "bg-white border border-zinc-200 rounded-xl p-2.5 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-1 h-28 cursor-pointer hover:shadow-md select-none overflow-hidden";
+                div.className = "bg-white border border-zinc-200 rounded-xl p-3 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-1 w-full max-w-[270px] h-36 cursor-pointer hover:shadow-md select-none overflow-hidden mx-auto";
                 div.onclick = (e) => {
                     if (e.target.closest('button') || e.target.closest('a') || e.target.closest('i')) return;
                     jumpToNoteContent(note.course_id, note.module_id, note.section_id, note.id);
