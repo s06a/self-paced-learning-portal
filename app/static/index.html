@@ -451,15 +451,6 @@
                                class="w-full pl-8 pr-3 py-1 text-[11px] bg-zinc-50 border border-zinc-200 rounded focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900"
                                oninput="sidebarNotesLimit = 5; renderSidebarNotes()">
                     </div>
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider select-none">Scope</span>
-                        <select id="sidebar-notes-scope" onchange="sidebarNotesLimit = 5; renderSidebarNotes()"
-                                class="bg-zinc-50 border border-zinc-200 rounded px-1.5 py-0.5 text-[10px] text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
-                            <option value="module" selected>Active Module</option>
-                            <option value="course">Active Track</option>
-                            <option value="all">All Tracks</option>
-                        </select>
-                    </div>
                 </div>
 
                 <!-- Notes Scrollable List -->
@@ -856,10 +847,6 @@
                 }
             }
             
-            const scopeSelect = document.getElementById("sidebar-notes-scope");
-            if (scopeSelect) {
-                scopeSelect.value = "course";
-            }
             sidebarNotesLimit = 5;
             
             window.location.hash = `#/course/${courseId}/module/${lastModuleId || 1}`;
@@ -899,10 +886,6 @@
         }
 
         function selectModuleFromSidebar(id) {
-            const scopeSelect = document.getElementById("sidebar-notes-scope");
-            if (scopeSelect) {
-                scopeSelect.value = "module";
-            }
             sidebarNotesLimit = 5;
             window.location.hash = `#/course/${state.currentCourseId}/module/${id}`;
         }
@@ -1062,9 +1045,10 @@
                 // Process and attach the Copy Button to all rendered code blocks
                 addCopyBlocksToCodeBlocks();
                 
-                // Apply highlights and then scroll to any pending note
+                // Apply highlights and then scroll to any pending note and sync sidebar cards
                 applyHighlightsForCurrentSection().then(() => {
                     scrollToPendingNote();
+                    renderSidebarNotes();
                 });
                 
                 const isSectionCompleted = state.moduleData.completed_sections.includes(tab);
@@ -1511,10 +1495,10 @@
                 }
             }
 
-            // Filter for current workspace tab scope
+            // Filter for current workspace tab scope with robust integer conversions
             const sectionNotes = notes.filter(n => 
                 n.course_id === state.currentCourseId && 
-                n.module_id === state.currentModuleId && 
+                parseInt(n.module_id) === parseInt(state.currentModuleId) && 
                 n.section_id === state.currentTab
             );
 
@@ -1938,10 +1922,6 @@
         function jumpToNoteContent(courseId, moduleId, sectionId, noteId) {
             state.currentTab = sectionId;
             
-            const scopeSelect = document.getElementById("sidebar-notes-scope");
-            if (scopeSelect) {
-                scopeSelect.value = "module";
-            }
             sidebarNotesLimit = 5;
             
             state.pendingScrollNoteId = noteId;
@@ -2021,15 +2001,13 @@
             if (!container) return;
             
             const searchQuery = document.getElementById("sidebar-notes-search")?.value.toLowerCase().trim() || "";
-            const scope = document.getElementById("sidebar-notes-scope")?.value || "module";
             
-            let filtered = cachedNotes;
-            
-            if (scope === "module") {
-                filtered = filtered.filter(n => n.course_id === state.currentCourseId && n.module_id === state.currentModuleId && n.section_id === state.currentTab);
-            } else if (scope === "course") {
-                filtered = filtered.filter(n => n.course_id === state.currentCourseId);
-            }
+            // Sidebar scope is now clean and strictly locked to the active tab content
+            let filtered = cachedNotes.filter(n => 
+                n.course_id === state.currentCourseId && 
+                parseInt(n.module_id) === parseInt(state.currentModuleId) && 
+                n.section_id === state.currentTab
+            );
             
             if (searchQuery) {
                 filtered = filtered.filter(n => 
