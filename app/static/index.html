@@ -1049,7 +1049,9 @@
                 
                 pane.innerHTML = renderMarkdown(markdownContent);
                 
-                if (preserveScroll && pane) {
+                if (state.pendingScrollNoteId) {
+                    // Do not reset scroll, let scrollToPendingNote smooth scroll directly from current position
+                } else if (preserveScroll && pane) {
                     pane.scrollTop = savedScrollTop;
                 } else if (pane) {
                     pane.scrollTop = 0;
@@ -1058,11 +1060,12 @@
                 // Process and attach the Copy Button to all rendered code blocks
                 addCopyBlocksToCodeBlocks();
                 
+                const hadPendingScroll = !!state.pendingScrollNoteId;
                 // Apply highlights and then scroll to any pending note and sync sidebar cards
                 applyHighlightsForCurrentSection().then(() => {
                     scrollToPendingNote();
                     renderSidebarNotes();
-                    if (preserveScroll && pane) {
+                    if (!hadPendingScroll && preserveScroll && pane) {
                         pane.scrollTop = savedScrollTop;
                     }
                 });
@@ -1929,11 +1932,14 @@
         function scrollToPendingNote() {
             if (!state.pendingScrollNoteId) return;
             const noteId = state.pendingScrollNoteId;
-            const markEl = document.querySelector(`mark[data-note-id="${noteId}"]`);
-            if (markEl) {
-                markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                state.pendingScrollNoteId = null;
-            }
+            state.pendingScrollNoteId = null;
+            
+            setTimeout(() => {
+                const markEl = document.querySelector(`mark[data-note-id="${noteId}"]`);
+                if (markEl) {
+                    markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 50);
         }
 
         function jumpToNoteContent(courseId, moduleId, sectionId, noteId) {
@@ -1946,7 +1952,6 @@
             const targetHash = `#/course/${courseId}/module/${moduleId}`;
             if (window.location.hash === targetHash) {
                 switchTab(sectionId);
-                scrollToPendingNote();
             } else {
                 window.location.hash = targetHash;
             }
