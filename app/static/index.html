@@ -111,9 +111,9 @@
     <div id="course-selection-screen" class="flex-1 p-6 md:p-12 max-w-5xl mx-auto w-full flex flex-col justify-between h-full overflow-hidden">
         
         <!-- Branding Header and Pomodoro Stats -->
-        <div class="flex flex-col md:flex-row md:items-stretch justify-between gap-6 mb-8 shrink-0">
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-6 shrink-0">
             <div>
-                <div class="flex items-center gap-2 mb-6">
+                <div class="flex items-center gap-2 mb-4">
                     <div class="bg-zinc-900 text-white rounded p-1.5 flex items-center justify-center">
                         <i data-lucide="layers" class="w-6 h-6"></i>
                     </div>
@@ -128,18 +128,39 @@
                 </div>
             </div>
 
-            <!-- Minimal 7-day Pomodoro Stats -->
-            <div id="pomodoro-stats-panel" class="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm min-w-[280px] md:max-w-xs w-full md:w-auto shrink-0 flex flex-col justify-between">
-                <div class="flex items-center justify-between mb-3">
+            <!-- Minimal 7-day Pomodoro Stats (Matches Course Card Styling and Size) -->
+            <div id="pomodoro-stats-panel" class="bg-white border border-zinc-200 rounded-xl p-3 shadow-sm min-w-[280px] md:max-w-xs w-full md:w-auto shrink-0 h-[90px] flex flex-col justify-between hover:shadow transition-all duration-200">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1.5">
-                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-zinc-600"></i>
-                        <span class="text-[10px] font-bold text-zinc-800 uppercase tracking-wider">Weekly Focus (mins)</span>
+                        <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-zinc-600"></i>
+                        <span class="text-[9px] font-bold text-zinc-800 uppercase tracking-wider">Weekly Focus (mins)</span>
                     </div>
-                    <span id="weekly-total" class="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">0m total</span>
+                    <span id="weekly-total" class="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">0m total</span>
                 </div>
-                <div id="stats-bars-container" class="flex items-end justify-between flex-1 min-h-[3rem] gap-2 pt-1">
+                <div id="stats-bars-container" class="flex items-end justify-between h-[38px] gap-1.5 pt-1">
                     <!-- Loaded dynamically -->
                 </div>
+            </div>
+        </div>
+
+        <!-- Controls Container (Search and Sort) -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
+            <!-- Search Filter Bar -->
+            <div class="relative flex-1 max-w-sm">
+                <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
+                <input type="text" id="course-filter-search" placeholder="Filter courses by name..."
+                       class="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition"
+                       oninput="filterAndSortCourses()">
+            </div>
+
+            <!-- Sort dropdown -->
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Sort by</span>
+                <select id="course-sort-select" onchange="filterAndSortCourses()"
+                        class="bg-white border border-zinc-200 rounded-md px-2 py-1 text-xs text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
+                    <option value="name">Name (A-Z)</option>
+                    <option value="progress">Progress (High to Low)</option>
+                </select>
             </div>
         </div>
 
@@ -347,18 +368,27 @@
             try {
                 const res = await fetch("/api/courses");
                 state.courses = await res.json();
-                renderCourseGrid();
+                filterAndSortCourses();
                 fetchPomodoroStats();
             } catch (err) {
                 console.error("Error communicating with courses endpoint", err);
             }
         }
 
-        function renderCourseGrid() {
+        function renderCourseGrid(coursesToRender = state.courses) {
             const grid = document.getElementById("course-grid");
             grid.innerHTML = "";
             
-            state.courses.forEach(c => {
+            if (coursesToRender.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full p-8 text-center border border-dashed rounded-lg border-zinc-200">
+                        <p class="text-xs text-zinc-500">No matching courses found.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            coursesToRender.forEach(c => {
                 const card = document.createElement("div");
                 card.className = "bg-white border border-zinc-200 hover:border-zinc-400 rounded-xl p-3 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between hover:shadow";
                 card.onclick = () => enterCourse(c.id);
@@ -391,6 +421,25 @@
             lucide.createIcons();
         }
 
+        function filterAndSortCourses() {
+            const query = document.getElementById("course-filter-search")?.value.toLowerCase().trim() || "";
+            const sortOpt = document.getElementById("course-sort-select")?.value || "name";
+            
+            let filtered = state.courses.filter(c => {
+                const titleMatch = c.title.toLowerCase().includes(query);
+                const descMatch = c.description.toLowerCase().includes(query);
+                return titleMatch || descMatch;
+            });
+            
+            if (sortOpt === "name") {
+                filtered.sort((a, b) => a.title.localeCompare(b.title));
+            } else if (sortOpt === "progress") {
+                filtered.sort((a, b) => b.percentage - a.percentage);
+            }
+            
+            renderCourseGrid(filtered);
+        }
+
         async function enterCourse(courseId) {
             state.currentCourseId = courseId;
             state.activeView = 'module';
@@ -417,6 +466,12 @@
             state.currentCourseId = null;
             state.currentModuleId = null;
             document.getElementById("global-search").value = "";
+            
+            const filterSearch = document.getElementById("course-filter-search");
+            if (filterSearch) filterSearch.value = "";
+            const sortSelect = document.getElementById("course-sort-select");
+            if (sortSelect) sortSelect.value = "name";
+            
             document.getElementById("workspace-screen").classList.add("hidden");
             document.getElementById("course-selection-screen").classList.remove("hidden");
             fetchCourses();
