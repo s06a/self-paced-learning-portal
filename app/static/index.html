@@ -330,7 +330,7 @@
                             <button onclick="adjustFontSize(-1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Decrease font size">A-</button>
                             <button onclick="adjustFontSize(1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Increase font size">A+</button>
                             <span class="text-zinc-300 px-0.5 select-none">|</span>
-                            <button id="btn-toggle-notes-sidebar" onclick="toggleNotesSidebar()" class="px-2 h-6 rounded flex items-center gap-1 text-[11px] font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Toggle Study Notes">
+                            <button id="btn-toggle-notes-sidebar" onclick="enterNotesManager()" class="px-2 h-6 rounded flex items-center gap-1 text-[11px] font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Go to Notes Manager">
                                 <i data-lucide="edit-3" class="w-3 h-3"></i> <span>Notes</span>
                             </button>
                         </div>
@@ -427,48 +427,6 @@
         </div>
     </div>
 </div> <!-- Closing MAIN VIEW CONTAINER -->
-
-<!-- RIGHT SIDEBAR (Study Notes) -->
-<aside id="notes-sidebar" class="w-80 h-full border-l border-zinc-200 bg-white flex flex-col justify-between shrink-0 overflow-hidden relative transition-all duration-300">
-            <div class="p-5 flex flex-col gap-3 overflow-hidden flex-1 font-sans">
-                
-                <!-- Sidebar Header -->
-                <div class="flex items-center justify-between shrink-0 pb-2 border-b border-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                        <i data-lucide="edit-3" class="w-4 h-4 text-zinc-700"></i>
-                        <h3 class="text-xs font-bold text-zinc-900 uppercase tracking-tight">Study Notes</h3>
-                    </div>
-                    <button onclick="enterNotesManager()" class="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 hover:text-zinc-900 rounded text-[10px] font-bold transition flex items-center gap-1">
-                        <i data-lucide="sticky-note" class="w-3 h-3"></i>
-                        <span>Go to Notes Manager</span>
-                    </button>
-                </div>
-
-                <!-- Notes Filter / Scope inside Right Sidebar -->
-                <div class="flex flex-col gap-2 shrink-0">
-                    <div class="relative w-full">
-                        <i data-lucide="search" class="absolute left-2.5 top-2 w-3 h-3 text-zinc-400"></i>
-                        <input type="text" id="sidebar-notes-search" placeholder="Search notes..."
-                               class="w-full pl-8 pr-3 py-1 text-[11px] bg-zinc-50 border border-zinc-200 rounded focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900"
-                               oninput="sidebarNotesLimit = 5; renderSidebarNotes()">
-                    </div>
-                </div>
-
-                <!-- Notes Scrollable List -->
-                <div class="flex-1 overflow-y-auto pr-1 min-h-0 space-y-3" id="sidebar-notes-list">
-                    <!-- Loaded dynamically -->
-                </div>
-            </div>
-            
-            <!-- Sidebar Actions Footer -->
-            <div class="p-3 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between shrink-0 font-sans">
-                <button onclick="exportNotesMarkdown()" class="text-[10px] font-bold text-zinc-600 hover:text-zinc-900 flex items-center gap-1 select-none">
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Export MD
-                </button>
-                <span class="text-[9px] text-zinc-400 font-medium">Auto-saves highlights</span>
-            </div>
-        </aside>
-    </div>
 
     <!-- Floating Text Selection Tooltip -->
     <div id="text-selector-tooltip" class="hidden absolute z-50 bg-zinc-950 text-white text-[10px] rounded-md shadow-lg border border-zinc-800 flex items-center">
@@ -619,19 +577,6 @@
             if (pane) {
                 pane.addEventListener("mouseup", handleTextSelection);
                 pane.addEventListener("keyup", handleTextSelection);
-            }
-            
-            // Scroll load more listener for study notes sidebar
-            const sidebarContainer = document.getElementById("sidebar-notes-list");
-            if (sidebarContainer) {
-                sidebarContainer.addEventListener("scroll", () => {
-                    if (sidebarContainer.scrollTop + sidebarContainer.clientHeight >= sidebarContainer.scrollHeight - 15) {
-                        if (sidebarNotesLimit < currentFilteredSidebarNotesLength) {
-                            sidebarNotesLimit += 5;
-                            renderSidebarNotes();
-                        }
-                    }
-                });
             }
 
             // Scroll mid content when scrolling anywhere in the mid-viewport between sidebars
@@ -1061,10 +1006,9 @@
                 addCopyBlocksToCodeBlocks();
                 
                 const hadPendingScroll = !!state.pendingScrollNoteId;
-                // Apply highlights and then scroll to any pending note and sync sidebar cards
+                // Apply highlights and then scroll to any pending note
                 applyHighlightsForCurrentSection().then(() => {
                     scrollToPendingNote();
-                    renderSidebarNotes();
                     if (!hadPendingScroll && preserveScroll && pane) {
                         pane.scrollTop = savedScrollTop;
                     }
@@ -1395,12 +1339,34 @@
             const selection = window.getSelection();
             if (selection.rangeCount === 0) return 0;
             const range = selection.getRangeAt(0);
-
-            // Create a range starting from the container start to the user's selection start point
-            const preRange = document.createRange();
-            preRange.setStart(container, 0);
-            preRange.setEnd(range.startContainer, range.startOffset);
-
+            
+            let startNode = range.startContainer;
+            let startOffset = range.startOffset;
+            
+            // Resolve element node to first text node descendant/sibling if necessary
+            if (startNode.nodeType === Node.ELEMENT_NODE) {
+                if (startOffset < startNode.childNodes.length) {
+                    let child = startNode.childNodes[startOffset];
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        startNode = child;
+                        startOffset = 0;
+                    } else {
+                        const walker = document.createTreeWalker(child, NodeFilter.SHOW_TEXT, null, false);
+                        const firstText = walker.nextNode();
+                        if (firstText) {
+                            startNode = firstText;
+                            startOffset = 0;
+                        } else {
+                            startNode = findNextTextNode(child, container);
+                            startOffset = 0;
+                        }
+                    }
+                } else {
+                    startNode = findNextTextNode(startNode, container);
+                    startOffset = 0;
+                }
+            }
+            
             const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
                 acceptNode: (node) => {
                     const parent = node.parentNode;
@@ -1413,33 +1379,72 @@
                     return NodeFilter.FILTER_ACCEPT;
                 }
             }, false);
-
+            
             let offset = 0;
             let node;
+            let found = false;
             while (node = walk.nextNode()) {
-                const nodeRange = document.createRange();
-                nodeRange.selectNode(node);
-
-                // Check if selection start lies before this text node
-                const endToStart = preRange.compareBoundaryPoints(Range.END_TO_START, nodeRange);
-                if (endToStart < 0) {
+                if (node === startNode) {
+                    offset += startOffset;
+                    found = true;
                     break;
                 }
-
-                // Check if selection start lies after this text node
-                const ending = preRange.compareBoundaryPoints(Range.END_TO_END, nodeRange);
-                if (ending >= 0) {
-                    offset += node.nodeValue.length;
-                } else {
-                    // Selection start is inside this text node
-                    const tempRange = document.createRange();
-                    tempRange.setStart(node, 0);
-                    tempRange.setEnd(preRange.endContainer, preRange.endOffset);
-                    offset += tempRange.toString().length;
-                    break;
-                }
+                offset += node.nodeValue.length;
             }
-            return offset;
+            
+            return found ? offset : offset;
+        }
+
+        function findNextTextNode(node, limitContainer) {
+            let current = node;
+            while (current && current !== limitContainer) {
+                let sibling = current.nextSibling;
+                while (sibling) {
+                    if (sibling.nodeType === Node.TEXT_NODE) {
+                        return sibling;
+                    }
+                    const walker = document.createTreeWalker(sibling, NodeFilter.SHOW_TEXT, null, false);
+                    const text = walker.nextNode();
+                    if (text) return text;
+                    sibling = sibling.nextSibling;
+                }
+                current = current.parentNode;
+            }
+            return null;
+        }
+
+        function findOccurrencesBeforeOffset(text, targetText, offset) {
+            let occurrenceIndex = 0;
+            let index = 0;
+            
+            while (true) {
+                const pos = text.indexOf(targetText, index);
+                if (pos === -1 || pos >= offset) {
+                    break;
+                }
+                occurrenceIndex++;
+                index = pos + 1;
+            }
+            
+            // If the exact match fails (e.g. relaxed whitespace collapsed in selectedText),
+            // fall back to a relaxed regex search matching findNthMatch's fallback.
+            if (text.indexOf(targetText) === -1) {
+                const escaped = targetText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const relaxedRegexStr = escaped.replace(/\s+/g, '\\s+');
+                try {
+                    const regex = new RegExp(relaxedRegexStr, 'gi');
+                    let match;
+                    occurrenceIndex = 0;
+                    while ((match = regex.exec(text)) !== null) {
+                        if (match.index >= offset) {
+                            break;
+                        }
+                        occurrenceIndex++;
+                    }
+                } catch (e) {}
+            }
+            
+            return occurrenceIndex;
         }
 
         async function addHighlightDirectly() {
@@ -1477,16 +1482,7 @@
                 aggregateText += tNode.nodeValue;
             }
 
-            let occurrenceIndex = 0;
-            let index = 0;
-            while (true) {
-                const pos = aggregateText.indexOf(selectedText, index);
-                if (pos === -1 || pos >= offset) {
-                    break;
-                }
-                occurrenceIndex++;
-                index = pos + 1;
-            }
+            const occurrenceIndex = findOccurrencesBeforeOffset(aggregateText, selectedText, offset);
             
             try {
                 const res = await fetch("/api/notes", {
@@ -1699,32 +1695,7 @@
         }
 
         function syncNotesSidebarState() {
-            const sidebar = document.getElementById("notes-sidebar");
-            const mainButton = document.getElementById("btn-toggle-notes-sidebar");
-            if (!sidebar) return;
-            
-            if (state.activeView === 'courses' || state.activeView === 'search' || state.activeView === 'notes-manager') {
-                sidebar.classList.add("hidden");
-                if (mainButton) {
-                    mainButton.classList.remove("bg-white", "shadow-sm");
-                    mainButton.classList.add("hover:bg-white");
-                }
-            } else {
-                const sidebarWishedOpen = localStorage.getItem("sidebar_notes_open") !== "false";
-                if (sidebarWishedOpen) {
-                    sidebar.classList.remove("hidden");
-                    if (mainButton) {
-                        mainButton.classList.add("bg-white", "shadow-sm");
-                        mainButton.classList.remove("hover:bg-white");
-                    }
-                } else {
-                    sidebar.classList.add("hidden");
-                    if (mainButton) {
-                        mainButton.classList.remove("bg-white", "shadow-sm");
-                        mainButton.classList.add("hover:bg-white");
-                    }
-                }
-            }
+            // Sidebar notes have been removed, notes button redirects to Notes Manager
         }
 
         async function showNoteTooltip(event, noteId) {
@@ -1841,7 +1812,6 @@
                 if (res.ok) {
                     cachedNotes = await res.json();
                     renderNotesList();
-                    renderSidebarNotes();
                 }
             } catch (err) {
                 console.error("Error retrieving notes list", err);
@@ -2019,88 +1989,15 @@
         }
 
         function renderSidebarNotes() {
-            const container = document.getElementById("sidebar-notes-list");
-            if (!container) return;
-            
-            const searchQuery = document.getElementById("sidebar-notes-search")?.value.toLowerCase().trim() || "";
-            
-            // Sidebar scope is now clean and strictly locked to the active tab content
-            let filtered = cachedNotes.filter(n => 
-                n.course_id === state.currentCourseId && 
-                parseInt(n.module_id) === parseInt(state.currentModuleId) && 
-                n.section_id === state.currentTab
-            );
-            
-            if (searchQuery) {
-                filtered = filtered.filter(n => 
-                    n.selected_text.toLowerCase().includes(searchQuery)
-                );
-            }
-            
-            currentFilteredSidebarNotesLength = filtered.length;
-            
-            // Slice the notes list up to the current progressive load limit
-            const displayed = filtered.slice(0, sidebarNotesLimit);
-            
-            if (displayed.length === 0) {
-                container.innerHTML = `
-                    <div class="p-4 text-center border border-dashed rounded-lg border-zinc-200">
-                        <p class="text-[11px] text-zinc-500">No matching highlights found.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = "";
-            displayed.forEach(note => {
-                const div = document.createElement("div");
-                div.className = "bg-white border border-zinc-200 rounded-xl p-3 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-1 w-full max-w-[270px] h-36 cursor-pointer hover:shadow-md select-none overflow-hidden mx-auto";
-                div.onclick = (e) => {
-                    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('i')) return;
-                    jumpToNoteContent(note.course_id, note.module_id, note.section_id, note.id);
-                };
-                
-                div.innerHTML = getNoteCardHTML(note, true);
-                container.appendChild(div);
-            });
-            
-            // Dynamic scroll load indicator inside sidebar
-            if (filtered.length > sidebarNotesLimit) {
-                const indicator = document.createElement("div");
-                indicator.className = "p-2 text-center text-[10px] text-zinc-400 font-semibold animate-pulse select-none cursor-pointer";
-                indicator.textContent = "Scroll down to load more...";
-                container.appendChild(indicator);
-            }
-            
-            lucide.createIcons();
+            // Sidebar notes have been removed, notes button redirects to Notes Manager
         }
 
         function deleteSidebarNote(noteId) {
-            showDeleteConfirmModal(noteId, async () => {
-                // UI is updated instantly inside executeDelete
-            });
+            // Sidebar notes have been removed, notes button redirects to Notes Manager
         }
 
         function toggleNotesSidebar() {
-            const sidebar = document.getElementById("notes-sidebar");
-            const mainButton = document.getElementById("btn-toggle-notes-sidebar");
-
-            if (sidebar.classList.contains("hidden")) {
-                sidebar.classList.remove("hidden");
-                localStorage.setItem("sidebar_notes_open", "true");
-                if (mainButton) {
-                    mainButton.classList.add("bg-white", "shadow-sm");
-                    mainButton.classList.remove("hover:bg-white");
-                }
-            } else {
-                sidebar.classList.add("hidden");
-                localStorage.setItem("sidebar_notes_open", "false");
-                if (mainButton) {
-                    mainButton.classList.remove("bg-white", "shadow-sm");
-                    mainButton.classList.add("hover:bg-white");
-                }
-            }
-            window.dispatchEvent(new Event('resize'));
+            // Sidebar notes have been removed, notes button redirects to Notes Manager
         }
 
         function addCopyBlocksToCodeBlocks() {
