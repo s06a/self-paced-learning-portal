@@ -224,9 +224,9 @@
                         <option value="progress">Progress (High to Low)</option>
                     </select>
                 </div>
-                <button onclick="enterNotesManager()" class="bg-zinc-950 text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition flex items-center gap-1.5 shrink-0 shadow-sm">
+                <button onclick="enterNotes()" class="bg-zinc-950 text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition flex items-center gap-1.5 shrink-0 shadow-sm">
                     <i data-lucide="sticky-note" class="w-3.5 h-3.5"></i>
-                    <span>Notes Manager</span>
+                    <span>Notes</span>
                 </button>
             </div>
         </div>
@@ -330,7 +330,7 @@
                             <button onclick="adjustFontSize(-1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Decrease font size">A-</button>
                             <button onclick="adjustFontSize(1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Increase font size">A+</button>
                             <span class="text-zinc-300 px-0.5 select-none">|</span>
-                            <button id="btn-toggle-notes-sidebar" onclick="enterNotesManager()" class="px-2 h-6 rounded flex items-center gap-1 text-[11px] font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Go to Notes Manager">
+                            <button id="btn-toggle-notes-sidebar" onclick="enterNotes()" class="px-2 h-6 rounded flex items-center gap-1 text-[11px] font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Go to Notes">
                                 <i data-lucide="edit-3" class="w-3 h-3"></i> <span>Notes</span>
                             </button>
                         </div>
@@ -384,14 +384,14 @@
     </div>
 
     <!-- Screen 3: Dedicated Note Taking Page -->
-    <div id="notes-manager-screen" class="hidden flex-1 overflow-hidden h-full w-full flex flex-col p-6 md:p-8 max-w-5xl mx-auto">
+    <div id="notes-screen" class="hidden flex-1 overflow-hidden h-full w-full flex flex-col p-6 md:p-8 max-w-5xl mx-auto">
         <!-- Header section -->
         <div class="flex items-center justify-between gap-4 border-b border-zinc-200 pb-4 mb-4 shrink-0">
             <div>
                 <button onclick="backFromNotes()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-900 transition font-bold uppercase tracking-wider mb-2">
                     <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back
                 </button>
-                <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Study Notes Manager</h2>
+                <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Study Notes</h2>
                 <p class="text-xs text-zinc-500 mt-1">Review, search, and manage all your notes and highlighted content across all tracks.</p>
             </div>
             <button onclick="exportNotesMarkdown()" class="bg-zinc-950 text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition flex items-center gap-1.5 shrink-0 shadow-sm">
@@ -503,68 +503,13 @@
             currentTab: 'theory',
             moduleData: null,
             fontSize: parseInt(localStorage.getItem('preferred_font_size')) || 12,
-            activeView: 'courses' // 'courses', 'module', 'search', 'notes-manager'
+            activeView: 'courses' // 'courses', 'module', 'search', 'notes'
         };
 
-        let notesOriginView = 'courses';
         let notesOriginHash = '#/';
         let cachedNotes = [];
         let pendingSelectionText = "";
         let activeTooltipNoteId = null;
-        let sidebarNotesLimit = 5;
-        let currentFilteredSidebarNotesLength = 0;
-
-        async function handleRouting() {
-            const hash = window.location.hash;
-            
-            if (hash === "" || hash === "#" || hash === "#/") {
-                backToCourses();
-            } else if (hash === "#/notes-manager") {
-                state.activeView = 'notes-manager';
-                document.getElementById("course-selection-screen").classList.add("hidden");
-                document.getElementById("workspace-screen").classList.add("hidden");
-                document.getElementById("notes-manager-screen").classList.remove("hidden");
-                
-                const filterDropdown = document.getElementById("notes-course-filter");
-                if (filterDropdown) {
-                    filterDropdown.innerHTML = '<option value="all">All Courses</option>';
-                    state.courses.forEach(c => {
-                        filterDropdown.innerHTML += `<option value="${c.id}">${escapeHTML(c.title)}</option>`;
-                    });
-                }
-                
-                await fetchAndRenderNotes();
-                syncNotesSidebarState();
-            } else {
-                const match = hash.match(/^#\/course\/([^/]+)\/module\/(\d+)$/);
-                if (match) {
-                    const courseId = match[1];
-                    const moduleId = parseInt(match[2]);
-                    
-                    state.activeView = 'module';
-                    document.getElementById("course-selection-screen").classList.add("hidden");
-                    document.getElementById("notes-manager-screen").classList.add("hidden");
-                    document.getElementById("workspace-screen").classList.remove("hidden");
-                    document.getElementById("module-container").classList.remove("hidden");
-                    document.getElementById("search-container").classList.add("hidden");
-
-                    if (state.courses.length === 0) {
-                        await fetchCourses();
-                    }
-                    
-                    const course = state.courses.find(c => c.id === courseId);
-                    if (course) {
-                        document.getElementById("sidebar-course-title").textContent = course.title;
-                    }
-                    
-                    state.currentCourseId = courseId;
-                    
-                    await fetchCurriculum();
-                    await loadModule(moduleId);
-                    syncNotesSidebarState();
-                }
-            }
-        }
 
         document.addEventListener("DOMContentLoaded", () => {
             window.addEventListener("hashchange", handleRouting);
@@ -711,7 +656,7 @@
             
             document.getElementById("course-selection-screen").classList.add("hidden");
             document.getElementById("workspace-screen").classList.add("hidden");
-            document.getElementById("notes-manager-screen").classList.add("hidden");
+            document.getElementById("notes-screen").classList.add("hidden");
             
             if (hash === "#/" || hash === "#/courses" || hash === "") {
                 state.activeView = 'courses';
@@ -723,11 +668,10 @@
                 if (searchInput) searchInput.value = "";
                 
                 await fetchCourses();
-                syncNotesSidebarState();
             } 
-            else if (hash === "#/notes-manager") {
-                state.activeView = 'notes-manager';
-                document.getElementById("notes-manager-screen").classList.remove("hidden");
+            else if (hash === "#/notes") {
+                state.activeView = 'notes';
+                document.getElementById("notes-screen").classList.remove("hidden");
                 
                 const select = document.getElementById("notes-course-filter");
                 if (select) {
@@ -737,7 +681,6 @@
                     });
                 }
                 
-                syncNotesSidebarState();
                 await fetchAndRenderNotes();
             } 
             else {
@@ -765,7 +708,6 @@
                         }
                     }
                     
-                    syncNotesSidebarState();
                     await loadModule(moduleId);
                 } else {
                     window.location.hash = "#/";
@@ -789,8 +731,6 @@
                     lastModuleId = 1;
                 }
             }
-            
-            sidebarNotesLimit = 5;
             
             window.location.hash = `#/course/${courseId}/module/${lastModuleId || 1}`;
         }
@@ -829,7 +769,6 @@
         }
 
         function selectModuleFromSidebar(id) {
-            sidebarNotesLimit = 5;
             state.currentTab = 'theory';
             const targetHash = `#/course/${state.currentCourseId}/module/${id}`;
             if (window.location.hash === targetHash) {
@@ -1003,7 +942,7 @@
                 }
                 
                 // Process and attach the Copy Button to all rendered code blocks
-                addCopyBlocksToCodeBlocks();
+                addCopyButtonsToCodeBlocks();
                 
                 const hadPendingScroll = !!state.pendingScrollNoteId;
                 // Apply highlights and then scroll to any pending note
@@ -1300,6 +1239,16 @@
 
         function handleTextSelection(e) {
             const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                let range = selection.getRangeAt(0);
+                const trimmed = trimRange(range);
+                if (trimmed.startContainer !== range.startContainer || trimmed.startOffset !== range.startOffset ||
+                    trimmed.endContainer !== range.endContainer || trimmed.endOffset !== range.endOffset) {
+                    selection.removeAllRanges();
+                    selection.addRange(trimmed);
+                }
+            }
+            
             const selectedText = selection.toString().trim();
             if (!selectedText) {
                 hideFloatingSelector();
@@ -1413,6 +1362,95 @@
             return null;
         }
 
+        function findPrevTextNode(node, limitContainer) {
+            let current = node;
+            while (current && current !== limitContainer) {
+                let sibling = current.previousSibling;
+                while (sibling) {
+                    if (sibling.nodeType === Node.TEXT_NODE) {
+                        return sibling;
+                    }
+                    const walker = document.createTreeWalker(sibling, NodeFilter.SHOW_TEXT, null, false);
+                    let prevText = null;
+                    let text;
+                    while (text = walker.nextNode()) {
+                        prevText = text;
+                    }
+                    if (prevText) return prevText;
+                    sibling = sibling.previousSibling;
+                }
+                current = current.parentNode;
+            }
+            return null;
+        }
+
+        function trimRange(range) {
+            if (range.collapsed) return range;
+            
+            let startNode = range.startContainer;
+            let startOffset = range.startOffset;
+            let endNode = range.endContainer;
+            let endOffset = range.endOffset;
+            
+            const limitContainer = document.getElementById("tab-pane-content");
+            
+            // Trim leading whitespace
+            while (startNode) {
+                if (startNode.nodeType === Node.TEXT_NODE) {
+                    const val = startNode.nodeValue;
+                    while (startOffset < val.length && /\s/.test(val[startOffset])) {
+                        startOffset++;
+                    }
+                    if (startOffset < val.length) {
+                        break;
+                    }
+                    const next = findNextTextNode(startNode, limitContainer);
+                    if (next) {
+                        startNode = next;
+                        startOffset = 0;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+            
+            // Trim trailing whitespace
+            while (endNode) {
+                if (endNode.nodeType === Node.TEXT_NODE) {
+                    const val = endNode.nodeValue;
+                    while (endOffset > 0 && /\s/.test(val[endOffset - 1])) {
+                        endOffset--;
+                    }
+                    if (endOffset > 0) {
+                        break;
+                    }
+                    const prev = findPrevTextNode(endNode, limitContainer);
+                    if (prev) {
+                        endNode = prev;
+                        endOffset = prev.nodeValue.length;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+            
+            try {
+                const newRange = document.createRange();
+                newRange.setStart(startNode, startOffset);
+                newRange.setEnd(endNode, endOffset);
+                if (newRange.collapsed) {
+                    return range;
+                }
+                return newRange;
+            } catch (e) {
+                return range;
+            }
+        }
+
         function findOccurrencesBeforeOffset(text, targetText, offset) {
             let occurrenceIndex = 0;
             let index = 0;
@@ -1449,6 +1487,13 @@
 
         async function addHighlightDirectly() {
             const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                let range = selection.getRangeAt(0);
+                const trimmed = trimRange(range);
+                selection.removeAllRanges();
+                selection.addRange(trimmed);
+            }
+            
             const selectedText = selection.toString().trim();
             if (!selectedText) return;
             
@@ -1797,9 +1842,9 @@
             });
         }
 
-        function enterNotesManager() {
+        function enterNotes() {
             notesOriginHash = window.location.hash || "#/";
-            window.location.hash = "#/notes-manager";
+            window.location.hash = "#/notes";
         }
 
         function backFromNotes() {
@@ -1823,9 +1868,8 @@
             return text.replace(/\s+/g, ' ').trim();
         }
 
-        function getNoteCardHTML(note, isSidebar = false) {
+        function getNoteCardHTML(note) {
             const cleanedText = cleanSelectedTextForCard(note.selected_text);
-            const deleteFn = isSidebar ? `deleteSidebarNote(${note.id})` : `deleteNoteFromManager(${note.id})`;
 
             return `
                 <div class="flex-1 flex flex-col justify-between min-h-0 h-full">
@@ -1842,7 +1886,7 @@
                         </button>
                         
                         <div class="flex items-center gap-2">
-                            <button onclick="event.stopPropagation(); ${deleteFn}" class="text-rose-500 hover:text-rose-700 p-0.5 transition" title="Delete Highlight">
+                            <button onclick="event.stopPropagation(); deleteNote(${note.id})" class="text-rose-500 hover:text-rose-700 p-0.5 transition" title="Delete Highlight">
                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
@@ -1887,13 +1931,13 @@
                     jumpToNoteContent(note.course_id, note.module_id, note.section_id, note.id);
                 };
                 
-                card.innerHTML = getNoteCardHTML(note, false);
+                card.innerHTML = getNoteCardHTML(note);
                 container.appendChild(card);
             });
             lucide.createIcons();
         }
 
-        function deleteNoteFromManager(noteId) {
+        function deleteNote(noteId) {
             showDeleteConfirmModal(noteId, async () => {
                 // UI is updated instantly inside executeDelete
             });
@@ -1914,9 +1958,6 @@
 
         function jumpToNoteContent(courseId, moduleId, sectionId, noteId) {
             state.currentTab = sectionId;
-            
-            sidebarNotesLimit = 5;
-            
             state.pendingScrollNoteId = noteId;
             
             const targetHash = `#/course/${courseId}/module/${moduleId}`;
@@ -1970,38 +2011,10 @@
             document.body.removeChild(link);
         }
 
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag] || tag)
-            );
-        }
-
         function renderMarkdown(text) {
             if (!text) return "";
             let processed = text.replace(/==([^=]+)==/g, '<mark>$1</mark>');
             return marked.parse(processed);
-        }
-
-        function renderSidebarNotes() {
-            // Sidebar notes have been removed, notes button redirects to Notes Manager
-        }
-
-        function deleteSidebarNote(noteId) {
-            // Sidebar notes have been removed, notes button redirects to Notes Manager
-        }
-
-        function toggleNotesSidebar() {
-            // Sidebar notes have been removed, notes button redirects to Notes Manager
-        }
-
-        function addCopyBlocksToCodeBlocks() {
-            addCopyButtonsToCodeBlocks();
         }
     </script>
 </body>

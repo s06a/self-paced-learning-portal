@@ -22,7 +22,7 @@ A lightweight, self-hosted learning portal for self-paced study in DevOps, SRE, 
 * **Dynamic Course Loading:** Automatically loads any curriculum defined in Python configuration files inside the `/courses` directory.
 * **Persistent Progress Tracking:** Saves completion states across lesson tabs (Core Concepts, Command Reference, Real-World Examples, Hands-On Lab, and Interview Q&As) locally using a SQLite database.
 * **Local Highlight & Study Notes Engine:** Select any text within a curriculum pane to instantly highlight and anchor it. Notes and highlights are cataloged with custom occurrence indicators.
-* **Dedicated Notes Manager:** Access, filter, search, and export compiled highlights as structured Markdown files.
+* **Dedicated Notes View:** Access, filter, search, and export compiled highlights as structured Markdown files.
 * **Focus (Pomodoro) Tracker:** Integrated study timer on the workspace with a dashboard 7-day visualization to track daily minutes logged.
 * **Unified Search:** Global search across active curricula to find course-mapped matches instantly.
 * **Workspace Controls:** Includes a collapsible study notes sidebar, copy buttons on preformatted code blocks, and direct workspace font-size scaling adjustments.
