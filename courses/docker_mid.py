@@ -1,7 +1,7 @@
 # Docker Mid-Level Course Definition
 COURSE_ID = "docker-midlevel"
 COURSE_TITLE = "Docker Mid Level"
-COURSE_DESCRIPTION = "Advance your skills in image optimization, multi-stage compilation, container hardening, non-root security, production server deployment, health checks, and CI/CD workflows."
+COURSE_DESCRIPTION = "Advance your skills in image optimization, multi-stage compilation, container hardening, non-root security, production server deployment, health checks, advanced networking, persistent storage, and CI/CD workflows."
 
 CURRICULUM_DATA = [
     {
@@ -604,6 +604,338 @@ High-traffic containers can generate gigabytes of log data, which can quietly co
 
 ### Key Focus
 Design your container deployments with reliability in mind. Implement structured health checks, configure logging drivers to prevent host storage issues, and use deterministic tagging in your automated pipelines.
+        """
+    },
+    {
+        "id": 4,
+        "title": "Module 4: Advanced Docker Networking & Dynamic Service Discovery",
+        "theory": """
+### Docker Bridge Drivers and Isolation
+Docker provides a modular network subsystem utilizing drivers. For single-node environments:
+*   **Default Bridge Network (`bridge`):** Automatically provisioned on daemon startup. Containers connected to this default bridge can communicate with each other only via raw IP addresses unless explicitly linked, which is a deprecated pattern.
+*   **User-Defined Bridge Networks:** Provide superior isolation and automatic DNS-based service discovery. Any containers attached to the same user-defined bridge can resolve each other by name automatically.
+
+### DNS Resolution Mechanics
+The engine injects a localized resolver at IP address `127.0.0.11` inside every container attached to a user-defined network. When a name query is initialized, this embedded server intercepts the lookup. If the query targets a sibling container, it yields the container's internal IP. If the name is external, it delegates the query to the host's configured upstream DNS systems.
+
+### Port Publishing Mechanics and Routing Overhead
+*   **Exposing vs. Publishing Ports:** The `EXPOSE` metadata directive functions purely as documentation. It does not map ports to the host system. Publishing via `-p` maps a host port to the container port via a user-space proxy handler (`docker-proxy`) and adds DNAT routing entries in the host's iptables configuration.
+*   **Host Networking (`--network host`):** Removes network namespace isolation, allowing the container process to bind directly to host interfaces. This eliminates namespace overhead and `docker-proxy` mapping, increasing throughput at the cost of network isolation and port namespace conflicts.
+        """,
+        "commands": """
+### Command Reference
+
+* `docker network create --driver bridge --subnet [SUBNET] [NET_NAME]`  
+  Creates a user-defined bridge network with an isolated, static IP range (e.g., `--subnet 10.15.0.0/16`).  
+* `docker network connect [NET_NAME] [CONTAINER]`  
+  Dynamically attaches a running container to a network without interrupting its execution.  
+* `docker network disconnect [NET_NAME] [CONTAINER]`  
+  Safely removes a container from an active network pathway.  
+* `docker network inspect [NET_NAME]`  
+  Returns comprehensive configuration data, including active IP allocations and connected container IDs.  
+* `docker network ls --filter driver=bridge`  
+  Lists all user-configured and default bridge networking namespaces on the host system.
+        """,
+        "examples": """
+### Real-World Examples
+
+#### Example 1: Creating an Isolated Database Network with Dynamic Sibling Routing
+*   **Situation:** You want to isolate a Postgres database so that only the backend API can communicate with it, keeping it completely inaccessible from other host networks.
+*   **Action:** Provision a custom bridge and attach both services:
+    ```bash
+    # Create the isolated bridge network
+    docker network create db-private-bridge
+
+    # Launch database connected directly to the isolated bridge
+    docker run -d --name secure-postgres --network db-private-bridge -e POSTGRES_PASSWORD=secret postgres:15
+
+    # Launch application backend connected to the same bridge
+    docker run -d --name company-api --network db-private-bridge -p 8080:8000 backend-app:v1
+    ```
+
+#### Example 2: Injecting Custom Upstream DNS Configs and IP Mapping Directives
+*   **Situation:** A container needs to resolve internal corporate servers not registered on public DNS, while mapping a mock domain (`mock.api.local`) to a specific IP during test phases.
+*   **Action:** Launch the container with explicit DNS override directives:
+    ```bash
+    docker run -d --name integrated-app \
+      --dns=10.0.0.50 \
+      --add-host=mock.api.local:192.168.1.100 \
+      python-worker:latest
+    ```
+
+#### Example 3: Parsing Sibling Container DNS Name Dynamically in Python
+*   **Situation:** You are writing a Python automation script that needs to dynamically resolve and ping another container's IP over a shared user-defined network.
+*   **Action:** Use Python's built-in `socket` module to resolve the target name:
+    ```python
+    import socket
+    import sys
+
+    target_service = "secure-postgres"
+
+    try:
+        ip_address = socket.gethostbyname(target_service)
+        print(f"Service '{target_service}' resolved successfully to: {ip_address}")
+    except socket.gaierror as e:
+        print(f"Failed to resolve service '{target_service}': {e}")
+        sys.exit(1)
+    ```
+
+#### Example 4: Dynamically Connecting a Diagnostic Utility to an Active Network
+*   **Situation:** A production API is failing to connect to its cache. You need to connect a diagnostic shell container to the app's network to audit port availability.
+*   **Action:** Spin up a container and connect it to the network path:
+    ```bash
+    # Attach a diagnostic image to the target application's network namespace
+    docker network connect app-net diagnostic-container
+
+    # Execute a port sweep directly against the service name
+    docker exec -it diagnostic-container nc -z -v secure-cache 6379
+    ```
+
+#### Example 5: Deploying a Latency-Sensitive Application via Host Networking
+*   **Situation:** A Python socket-server processes thousands of UDP packets per second, and `docker-proxy` is introducing packet drops and high CPU overhead.
+*   **Action:** Bind the container directly to the host's networking stack:
+    ```bash
+    docker run -d --name high-throughput-udp \
+      --network host \
+      packet-processor:v2
+    ```
+        """,
+        "exercise": """
+### Hands-On Labs
+
+#### Lab 1: Isolating Multi-tier Services using Custom Network Bridges
+*   **Objective:** Segment a database, cache, and public web service into distinct, secure network zones.
+*   **Tasks:**
+    1. Create two user-defined networks: `frontend-net` and `backend-net`.
+    2. Launch a cache container attached only to `backend-net`.
+    3. Launch an API backend container attached to *both* `frontend-net` and `backend-net`.
+    4. Launch a web proxy container attached only to `frontend-net`.
+    5. Verify using `exec` and ping utility that web proxy can talk to API backend, but is structurally isolated from the database cache.
+
+#### Lab 2: Capturing and Inspecting Container-to-Container Traffic from Host
+*   **Objective:** Sniff network traffic running across a user-defined bridge using standard host tools.
+*   **Tasks:**
+    1. Create a user-defined network and launch a simple Python HTTP server container on it.
+    2. Find the host interface ID mapped to the custom bridge using `docker network inspect` and `ip link`.
+    3. Run `tcpdump -i [INTERFACE_NAME] -A` on the host to capture traffic on that bridge.
+    4. Trigger curl requests from a secondary client container on the same network.
+    5. Analyze the output to trace the unencrypted payloads traversing the virtual switch.
+
+#### Lab 3: Benchmarking Bridge Network Latency vs. Host Networking
+*   **Objective:** Use a Python socket program to measure networking latency overhead introduced by the Docker bridge namespace wrapper.
+*   **Tasks:**
+    1. Write a Python TCP echo server and a client that measures RTT (Round Trip Time).
+    2. Build these into a container image.
+    3. Deploy the server and client containers on a standard user-defined bridge and measure average RTT.
+    4. Deploy the same containers using `--network host`.
+    5. Compare the network latency metrics and write a performance report.
+
+#### Lab 4: Overriding External Upstreams and Simulating Local IP Mapping
+*   **Objective:** Enforce DNS routing and local static mappings on runtime containers.
+*   **Tasks:**
+    1. Deploy a container that curl-checks an external API (e.g., `api.github.com`).
+    2. Relaunch the container using `--add-host` to map `api.github.com` to `127.0.0.1`.
+    3. Verify that requests fail or resolve to localhost.
+    4. Configure the container upstream resolver using `--dns 8.8.4.4`.
+    5. Inspect `/etc/resolv.conf` and `/etc/hosts` inside the container to verify the changes.
+
+#### Lab 5: Dynamic Network hot-swapping under Active Web Load
+*   **Objective:** Safely connect and disconnect a live database container from client networks without interruption.
+*   **Tasks:**
+    1. Spin up a Postgres database on an isolated bridge network `db-net`.
+    2. Spin up a Python consumer app on an application bridge network `app-net`. Note that they cannot communicate.
+    3. Connect the database container to the `app-net` using `docker network connect`.
+    4. Verify that the Python application can now resolve and connect to the database.
+    5. Safely disconnect the database from `app-net` and confirm connection loss.
+        """,
+        "insight": """
+### Interview Q&A
+
+#### Q1: Why is automatic service discovery by container name only supported on user-defined networks, and not the default bridge?
+*   **Answer:** The default bridge network is a shared namespace where all containers run by default if no network is specified. Enabling automatic name resolution there would introduce security and namespace collision risks, as any container could spoof or intercept names of other unrelated services. User-defined networks are isolated namespaces created explicitly by administrators, making dynamic DNS resolution safe and predictable.
+
+#### Q2: What is the purpose of the `/etc/resolv.conf` configuration inside a container, and how does Docker manage it?
+*   **Answer:** Inside a container, `/etc/resolv.conf` defines the active DNS server configurations. Docker mounts a virtual, dynamically updated `/etc/resolv.conf` pointing to its embedded DNS resolver at `127.0.0.11` (on user-defined networks). If the host network settings or upstream DNS configurations change while the container is running, the Docker engine dynamically mirrors those changes into the container's virtual resolv.conf without requiring a restart.
+
+#### Q3: What is the performance penalty of using Published Ports (`-p`) compared to Host Networking (`--network host`)?
+*   **Answer:** Publishing a port using `-p` instructs the Docker daemon to spawn a user-space proxy helper process (`docker-proxy`) for every published port. This proxy routes connections from host interfaces to the container network namespace. This translation layer, combined with host `iptables` rules, adds CPU overhead and latency under extreme concurrent connection loads. Host networking completely bypasses this translation layer, offering native host performance.
+
+#### Q4: How does a container resolve name queries when a multi-host Overlay network is configured?
+*   **Answer:** On Overlay networks, Docker utilizes a distributed gossip-based control plane to sync container state across nodes. When a query is received by the container's local embedded DNS resolver (`127.0.0.11`), the resolver checks the synced distributed database of service-to-IP mappings. If the target container is running on another node, the embedded DNS returns the target's overlay network IP, routing the traffic through an encrypted VXLAN tunnel between the host nodes.
+
+#### Q5: If two containers on different custom bridge networks need to communicate directly, what are the architectural options?
+*   **Answer:** 
+    1. **Dynamic Connection:** You can run `docker network connect` to attach one of the containers to the other container's bridge network, allowing them to communicate over a shared network namespace.
+    2. **Host Port Publication:** You can publish the target container's port to the host system using `-p`, allowing the second container to communicate with it using the host's physical IP address.
+    3. **Combined Network:** You can create a third shared network and connect both containers to it, keeping their original networks isolated.
+
+### Key Focus
+Design isolated network topologies using user-defined bridges. Understand the underlying DNS and proxying systems to optimize service communication and network throughput in multi-container setups.
+        """
+    },
+    {
+        "id": 5,
+        "title": "Module 5: Persistent Data Strategies & Volume Management",
+        "theory": """
+### Data Persistence Paradigms
+Containers are designed to be ephemeral. When a container is deleted, all modifications to its internal writable layer are lost. To persist data, Docker provides three main storage patterns:
+*   **Volumes:** Managed entirely by Docker on the host filesystem (typically under `/var/lib/docker/volumes/`). They isolate application data from host OS paths and are the preferred method for persisting production database files and stateful resources.
+*   **Bind Mounts:** Direct mappings between a user-specified host path and a container path. Since they depend on the host's file structure and permissions, they are ideal for development workflows (like live-reloading code) but can introduce portability and security risks in production.
+*   **Tmpfs Mounts:** High-performance, temporary filesystems mounted in host system memory (`RAM`). They never write to physical disks, making them ideal for storing sensitive credentials, logs, or session state.
+
+### File Permissions and ID Mapping Mismatches
+When mounting host paths via bind mounts into a container running as a non-root user, file permission errors (`Permission Denied` / `EACCES`) often occur. This happens because Linux enforces access controls based on numerical User IDs (`UID`) and Group IDs (`GID`), not username strings. 
+If a host folder is owned by UID `1000` but the container application runs under a non-root system user with UID `999` (such as `appuser`), the containerized process will be blocked from writing to that folder. SREs resolve this by aligning user ownership on the host, using `--user` overrides, or configuring specific volume permission initializations inside entrypoint scripts.
+        """,
+        "commands": """
+### Command Reference
+
+* `docker volume create --driver local [VOLUME_NAME]`  
+  Creates a named volume managed by the local storage driver.  
+* `docker volume inspect [VOLUME_NAME]`  
+  Displays configuration details, including the physical mount path (`Mountpoint`) on the host system.  
+* `docker volume prune --force`  
+  Purges all unused named and anonymous volumes to reclaim storage space.  
+* `docker run -v [VOLUME_NAME]:[CON_PATH] -d [IMAGE]`  
+  Starts a container with a named volume mounted to a specific directory path.  
+* `docker run --mount type=bind,source=[HOST_PATH],target=[CON_PATH],readonly -d [IMAGE]`  
+  Mounts a host directory as a read-only bind mount, protecting host files from modifications by the container.
+        """,
+        "examples": """
+### Real-World Examples
+
+#### Example 1: Configuring a Production Database using Named Volumes
+*   **Situation:** You want to run a production database container, ensuring that data persists across database upgrades and is stored in a dedicated, Docker-managed volume.
+*   **Action:** Create a named volume and mount it to the database's data path:
+    ```bash
+    # Create a dedicated named volume for database storage
+    docker volume create database-storage
+
+    # Start the database container with the volume mounted
+    docker run -d \
+      --name production-db \
+      -v database-storage:/var/lib/postgresql/data \
+      -e POSTGRES_PASSWORD=securepass \
+      postgres:15
+    ```
+
+#### Example 2: Setting Up a Real-Time Live Reload Development Workflow
+*   **Situation:** A Python backend developer wants to run their FastAPI application inside a container while instantly reflecting local code changes without rebuilding the image.
+*   **Action:** Mount the local codebase into the container using a bind mount:
+    ```bash
+    docker run -d \
+      --name fastapi-dev \
+      -v $(pwd)/src:/app/src \
+      -p 8000:8000 \
+      fastapi-app:dev-latest \
+      uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    ```
+
+#### Example 3: Handling UID/GID Permission Mismatches for a Non-Root Container
+*   **Situation:** Your containerized Python application runs as a secure non-root user (UID 1001) and needs to write to a host log directory (`/var/log/app`) mounted via a bind mount.
+*   **Action:** Match user permissions on the host or launch the container with matching user context:
+    ```bash
+    # Create the host directory and assign ownership to the application user ID
+    sudo mkdir -p /var/log/app
+    sudo chown -R 1001:1001 /var/log/app
+
+    # Launch the container, matching the user context to ensure write permissions
+    docker run -d \
+      --name secure-logger \
+      --user 1001:1001 \
+      -v /var/log/app:/var/log/app \
+      python-logger:latest
+    ```
+
+#### Example 4: Mounting Critical Secrets Securely in System RAM
+*   **Situation:** A high-security web API needs to access a private SSH key during execution, but company security policies prohibit writing the key to physical disks.
+*   **Action:** Mount a high-performance in-memory temporary path:
+    ```bash
+    docker run -d \
+      --name web-api \
+      --mount type=tmpfs,destination=/app/secrets,tmpfs-mode=1770 \
+      web-backend:latest
+    ```
+
+#### Example 5: Backing Up and Exporting Named Volume Data
+*   **Situation:** You need to automate backups of database files stored inside a named Docker volume (`database-storage`) to an external compressed archive.
+*   **Action:** Launch an ephemeral container to mount the volume and export its contents:
+    ```bash
+    docker run --rm \
+      -v database-storage:/volume-data \
+      -v $(pwd)/backups:/backup-dir \
+      ubuntu:22.04 \
+      tar cvf /backup-dir/db-backup.tar /volume-data
+    ```
+        """,
+        "exercise": """
+### Hands-On Labs
+
+#### Lab 1: Resolving Host Folder Permissions for Non-Root Applications
+*   **Objective:** Identify and resolve access denied errors when a non-root container writes to a bind-mounted directory.
+*   **Tasks:**
+    1. Write a Python script that writes output to a file inside an `/output` directory.
+    2. Build this script into an image that runs under a non-root user (e.g., UID 2000).
+    3. Create an empty directory on your host owned by `root`.
+    4. Bind-mount this host folder to `/output` and run the container, observing the "Permission Denied" crash.
+    5. Re-align the directory ownership on the host to UID `2000` and confirm the script now runs successfully.
+
+#### Lab 2: Creating a Live-Reload Environment for Python web applications
+*   **Objective:** Map a local development path to a container, allowing real-time hot reloading during development.
+*   **Tasks:**
+    1. Create a minimal Flask or FastAPI application script.
+    2. Configure a Dockerfile with standard development server dependencies.
+    3. Start the container, mounting the local application folder via a host bind-mount.
+    4. Access the API endpoint to verify it works.
+    5. Modify your local Python code and verify that the application reload logs are generated and the changes are applied instantly.
+
+#### Lab 3: Accelerating Storage Performance using Memory-Mapped `tmpfs`
+*   **Objective:** Optimize temporary file I/O operations and secure transient data by using RAM-based storage.
+*   **Tasks:**
+    1. Write a Python benchmark script that repeatedly writes and deletes temporary session files.
+    2. Deploy the benchmark container using standard OverlayFS storage and measure execution time.
+    3. Rerun the container, mapping the temporary target directory to a memory-backed `tmpfs` path using the `--tmpfs` flag.
+    4. Measure the new execution time and calculate the performance speedup.
+    5. Verify that no files are left behind on physical disks when the container is stopped.
+
+#### Lab 4: Performing Ephemeral Automated Volume Backups and Restores
+*   **Objective:** Use transient utility containers to compress, export, and restore named Docker volumes.
+*   **Tasks:**
+    1. Create a named volume `data-val` and start a container that populates it with files.
+    2. Run an ephemeral utility container to compress the volume's data into a `tar` archive on the host.
+    3. Intentionally delete the named volume to simulate data corruption.
+    4. Create a clean named volume `data-val-restored`.
+    5. Run an ephemeral container to unpack the backup archive into the new volume, and verify that all files are restored correctly.
+
+#### Lab 5: Auditing Disk Performance under Shared Volume Writes
+*   **Objective:** Evaluate disk write behavior and detect race conditions during parallel writes to a shared volume.
+*   **Tasks:**
+    1. Create a single named volume `shared-disk`.
+    2. Launch two separate instances of an application container, mounting the shared volume to each instance.
+    3. Configure both containers to append timestamped logs to the same shared log file.
+    4. Verify that both containers can read and write to the shared file simultaneously.
+    5. Inspect the shared file to analyze the interleaved logs and evaluate data consistency.
+        """,
+        "insight": """
+### Interview Q&A
+
+#### Q1: Why are named volumes preferred over bind mounts for database storage in production environments?
+*   **Answer:** Named volumes are managed entirely by the Docker engine, which decouples them from the specific directory structure of the host OS. This abstraction ensures portability across different host environments, as Docker automatically manages physical directories under `/var/lib/docker/volumes/`. Additionally, named volumes offer better disk integration for non-Linux hosts (such as macOS and Windows) and support advanced storage drivers (like NFS, AWS EBS, or Ceph).
+
+#### Q2: How do you address file permission (`EACCES: permission denied`) issues when running a container as a non-root USER with bind-mounted directories?
+*   **Answer:** Linux enforces directory access permissions based on numerical User IDs (`UID`) and Group IDs (`GID`). If a container application runs as an unprivileged user (e.g., UID 1050), it cannot write to a bind-mounted host folder owned by a different user (e.g., root, or UID 1000). To resolve this, you must adjust the ownership of the host directory to match the container's UID (e.g., `chown -R 1050:1050 /host/path`), or start the container with matching user mapping using the `--user` flag (e.g., `--user $(id -u):$(id -g)`).
+
+#### Q3: What is the purpose of the read-only (`:ro`) mount flag, and when should SREs enforce it?
+*   **Answer:** The `:ro` flag mounts a directory or volume as read-only inside the container, preventing the containerized application from modifying, creating, or deleting files in that directory. SREs enforce this flag to secure critical system configurations, host paths (such as SSL certificates or system logs), and static application files, ensuring that compromised container processes cannot write malicious payloads to disk.
+
+#### Q4: What happens to data stored in a named volume if the container that generated it is updated and replaced?
+*   **Answer:** Data stored in a named volume is decoupled from the container's lifecycle. When a container is stopped, updated, or deleted, its named volume remains intact on the host filesystem. When a new container is deployed, it can mount the same named volume to gain immediate access to the existing data, enabling seamless application updates without data loss.
+
+#### Q5: How does the `tmpfs` mount protect I/O performance and data confidentiality on the host?
+*   **Answer:** A `tmpfs` mount maps a container directory directly to the host system's RAM instead of physical storage (HDD/SSD). Because RAM operates at significantly higher speeds than physical disks, file reads and writes have extremely low latency. Additionally, since the data resides entirely in memory, it is never committed to persistent storage, protecting sensitive keys, passwords, and tokens from forensic data recovery if the physical server is compromised.
+
+### Key Focus
+Decouple persistent data from the container lifecycle. Master the use of named volumes for production state, utilize bind mounts for development, and apply appropriate user permissions to avoid access conflicts.
         """
     }
 ]

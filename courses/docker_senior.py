@@ -1,7 +1,7 @@
 # Docker Senior Course Definition
 COURSE_ID = "docker-senior-engineering"
 COURSE_TITLE = "Docker Senior Level"
-COURSE_DESCRIPTION = "Deep dive into kernel-level virtualization, high-load system architectures, process signal optimization, advanced storage subsystems, system telemetry, and multi-node orchestration transitions."
+COURSE_DESCRIPTION = "Deep dive into kernel-level virtualization, high-load system architectures, process signal optimization, advanced storage subsystems, system telemetry, custom runtimes (gVisor), Linux security profiles, non-intrusive eBPF tracing, and multi-node orchestration transitions."
 
 CURRICULUM_DATA = [
     {
@@ -542,6 +542,351 @@ Additionally, applications should be instrumented with libraries like OpenTeleme
 
 ### Key Focus
 Deploy secure, resilient, and observable containers. Integrate automated vulnerability scanning into your build pipelines, inject secrets securely at runtime, and be prepared to transition local Docker workloads to production-grade Kubernetes or ECS environments.
+        """
+    },
+    {
+        "id": 4,
+        "title": "Module 4: Custom Container Runtimes & Linux Security Modules (LSM)",
+        "theory": """
+### OCI Runtime Specifications and Alternative Sandboxes
+Standard containers run via the default Open Container Initiative (OCI) runtime, `runc`, which utilizes namespaces and cgroups directly on the host Linux kernel. While high-performing, this model exposes the host kernel to exploitation if a process escapes. SREs secure sensitive workloads by using alternative runtimes:
+*   **gVisor (`runsc`):** A sandboxed runtime developed by Google that implements a user-space kernel (called the "Sentry") to intercept and filter system calls. Instead of passing syscalls directly to the host kernel, the Sentry virtualizes them, reducing the host kernel's attack surface.
+*   **Kata Containers:** Uses hardware-assisted virtualization to run containers inside lightweight microVMs with dedicated guest kernels.
+
+### System Call Filtering via Seccomp
+Seccomp (Secure Computing mode) limits the system calls a container can execute. By default, Docker applies a standard Seccomp profile that blocks dangerous system calls (such as `reboot`, `sys_ptrace`, or `mount`). Security teams can define custom Seccomp JSON profiles to enforce the principle of least privilege, blocking unnecessary calls (such as `mkdir` or `chmod`) for specific microservices.
+
+### Linux Kernel Capabilities and LSMs (AppArmor / SELinux)
+*   **Linux Capabilities:** Decouple root powers into fine-grained permissions. Instead of running a container as fully privileged root, SREs drop all capabilities and selectively grant only what is required (e.g., `CAP_NET_BIND_SERVICE` to bind to port 80).
+*   **AppArmor and SELinux:** Linux Security Modules (LSMs) that define access controls for processes. Docker applies default AppArmor profiles (like `docker-default`) to restrict containers from reading or writing to sensitive host filesystems (e.g., `/proc` or `/sys`).
+        """,
+        "commands": """
+### Command Reference
+
+* `docker run --runtime=runsc -d [IMAGE]`  
+  Launches a container using the gVisor sandbox runtime to isolate application system calls.  
+* `docker run --cap-drop=ALL --cap-add=NET_BIND_SERVICE -d [IMAGE]`  
+  Drops all root permissions and adds only the specific capability required to bind to low ports.  
+* `docker run --security-opt seccomp=[PATH_TO_PROFILE_JSON] -d [IMAGE]`  
+  Enforces a custom Seccomp JSON configuration to restrict specific system calls inside the container.  
+* `docker run --security-opt apparmor=[PROFILE_NAME] -d [IMAGE]`  
+  Enforces a customized AppArmor security profile on the containerized process.  
+* `capsh --print`  
+  Prints active Linux capabilities inside a running container for security verification.
+        """,
+        "examples": """
+### Real-World Examples
+
+#### Example 1: Securing Untrusted Script Execution with gVisor
+*   **Situation:** You run a Python-based execution platform that evaluates user-submitted scripts, and you need to prevent these scripts from attacking the host kernel.
+*   **Action:** Run the container using the gVisor (`runsc`) sandboxed runtime:
+    ```bash
+    # Install runsc, then run with isolated sandboxing
+    docker run -d \
+      --name untrusted-runner \
+      --runtime=runsc \
+      python-sandbox:v1
+    ```
+
+#### Example 2: Restricting Root Privileges via Capabilities Whitelisting
+*   **Situation:** A containerized Python web server needs to bind to port 80, but standard security guidelines prohibit running fully privileged root containers.
+*   **Action:** Drop all default capabilities and selectively add only `NET_BIND_SERVICE`:
+    ```bash
+    docker run -d \
+      --name secure-web-server \
+      --cap-drop=ALL \
+      --cap-add=NET_BIND_SERVICE \
+      -p 80:80 \
+      python:3.11-slim python -m http.server 80
+    ```
+
+#### Example 3: Applying a Custom Seccomp Profile to Block File Modifications
+*   **Situation:** You need to deploy a static file-reader API and want to ensure that even if the container is compromised, the attacker cannot modify file permissions (`chmod`) or write new directories (`mkdir`).
+*   **Action:** Launch the container with a custom Seccomp profile:
+    ```bash
+    # Create the seccomp profile mapping and launch the container
+    docker run -d \
+      --name hardened-reader \
+      --security-opt seccomp=./restrictive-seccomp.json \
+      file-reader-service:latest
+    ```
+
+#### Example 4: Enforcing Path Restrictions with AppArmor
+*   **Situation:** You need to protect your host's data files from unauthorized writes by an application container that requires high network access.
+*   **Action:** Load and enforce a custom AppArmor profile:
+    ```bash
+    # Load the profile on the host (e.g., 'restrict-write') and launch the container
+    docker run -d \
+      --name protected-container \
+      --security-opt apparmor=restrict-write \
+      data-processor:latest
+    ```
+
+#### Example 5: Testing Privilege Escalation Blocks in Hardened Containers
+*   **Situation:** Security auditors want to verify that non-root containers cannot escalate their privileges inside the container using setuid binaries.
+*   **Action:** Launch the container with `no-new-privileges` enabled:
+    ```bash
+    docker run -d \
+      --name secure-exec \
+      --security-opt=no-new-privileges:true \
+      production-worker:latest
+    ```
+        """,
+        "exercise": """
+### Hands-On Labs
+
+#### Lab 1: Benchmarking Syscall Latency in gVisor vs. Native runc
+*   **Objective:** Measure and analyze the performance overhead introduced by gVisor's user-space syscall interception.
+*   **Tasks:**
+    1. Write a Python script that executes 50,000 rapid system calls (e.g., opening, reading, and closing a file).
+    2. Build this script into a container image.
+    3. Run the container using the standard `runc` runtime and record the execution time.
+    4. Run the same container using the gVisor (`runsc`) runtime and record the execution time.
+    5. Compare the results and write a performance report detailing the trade-offs of gVisor sandboxing.
+
+#### Lab 2: Hardening a Python Web Server using Minimum Kernel Capabilities
+*   **Objective:** Configure a container to bind to a privileged port while dropping all unnecessary root privileges.
+*   **Tasks:**
+    1. Set up a simple Python application that binds to host port 80.
+    2. Verify that running the container with `--cap-drop=ALL` causes a socket error because it lacks port binding permissions.
+    3. Relaunch the container, dropping all capabilities but adding `CAP_NET_BIND_SERVICE`.
+    4. Verify that the server starts successfully and can accept requests on port 80.
+    5. Run `capsh --print` inside the container to verify that only the whitelisted capability is active.
+
+#### Lab 3: Crafting a Custom Seccomp Profile to Block System Calls
+*   **Objective:** Define and enforce a custom Seccomp profile to block specific system calls inside a container.
+*   **Tasks:**
+    1. Inspect Docker's default Seccomp JSON profile.
+    2. Create a custom Seccomp JSON profile that specifically blocks the `mkdir` and `rmdir` system calls.
+    3. Launch a Python container with this custom Seccomp profile applied.
+    4. Execute shell commands inside the container to attempt to create a directory, verifying that the operation is blocked with an "Operation not permitted" error.
+    5. Confirm that other system calls (like reading files) continue to function normally.
+
+#### Lab 4: Constructing and Enforcing an AppArmor Profile
+*   **Objective:** Create and apply an AppArmor profile to restrict container write access to specific directories.
+*   **Tasks:**
+    1. Create an AppArmor profile on the host that allows read access to `/etc` but blocks write access entirely.
+    2. Parse and load the profile into the host kernel using `apparmor_parser`.
+    3. Start a container, applying the custom AppArmor profile using the `--security-opt` flag.
+    4. Attempt to write to a file inside `/etc` from inside the container, verifying that the write operation fails.
+    5. Check the host's system logs (`/var/log/audit/audit.log` or `dmesg`) to confirm the AppArmor audit block event.
+
+#### Lab 5: Verifying Privilege Escalation Protections using No-New-Privileges
+*   **Objective:** Audit container behavior with and without setuid privilege escalation capabilities.
+*   **Tasks:**
+    1. Create a container containing a setuid binary designed to escalate user privileges to root.
+    2. Run the container as a non-root user and verify that the setuid binary successfully escalates privileges.
+    3. Relaunch the container with the flag `--security-opt=no-new-privileges:true` enabled.
+    4. Attempt to run the setuid binary again, verifying that the privilege escalation attempt is blocked.
+    5. Write a security analysis explaining how this flag hardens non-root container workloads.
+        """,
+        "insight": """
+### Interview Q&A
+
+#### Q1: How does gVisor's architecture isolate a container process compared to standard namespaces and cgroups?
+*   **Answer:** Standard containers share the host kernel directly, using namespaces to isolate resources and cgroups to limit consumption. If a process escapes the container, it can interact with the host kernel directly, presenting a security risk. gVisor replaces this model by introducing a user-space kernel called the "Sentry". All system calls made by the container are intercepted and handled by the Sentry in user space, preventing the container from interacting with the host kernel directly and significantly reducing the risk of kernel exploitation.
+
+#### Q2: What is the architectural difference between a microVM runtime (like Kata Containers) and a sandboxed runtime (like gVisor)?
+*   **Answer:** Kata Containers uses hardware-assisted virtualization to run containers inside isolated microVMs. Each container has its own dedicated guest kernel, providing complete isolation at the cost of higher memory and startup overhead. gVisor, on the other hand, is a sandboxed runtime that virtualizes system calls in user space, running processes within a shared environment. This offers faster startup times and lower memory consumption, though it introduces higher system call latency overhead.
+
+#### Q3: Why is dropping default Linux capabilities (`--cap-drop=ALL`) considered a vital first step in container security hardening?
+*   **Answer:** By default, Docker runs containers as the root user, which grants them a subset of Linux capabilities (such as `CAP_CHOWN`, `CAP_NET_RAW`, and `CAP_MKNOD`). If an attacker compromises the container, they can leverage these default capabilities to mount attacks on the host. Dropping all default capabilities removes these privileges entirely. SREs can then selectively re-add only the specific capabilities required by the application, minimizing the container's security attack surface.
+
+#### Q4: How do Seccomp profiles protect the host kernel from potential container escapes?
+*   **Answer:** Seccomp (Secure Computing mode) allows SREs to filter the system calls a container can make to the host kernel. When a container process attempts to execute a blocked system call, the kernel intercepts the request and terminates the process immediately, or returns an error. This prevents attackers from executing dangerous or unneeded system calls (such as `sys_ptrace` or `sys_admin`) to exploit kernel vulnerabilities and escape the container.
+
+#### Q5: How does an AppArmor or SELinux policy differ from a Seccomp filter in terms of enforcement mechanisms?
+*   **Answer:** Seccomp filters system calls at the kernel level based on the system call number, blocking or allowing specific actions (such as `write` or `chmod`) regardless of the target file or resource. AppArmor and SELinux are Linux Security Modules (LSMs) that enforce access controls based on path and process labels. They allow SREs to define granular rules, such as permitting a process to execute `write` calls to `/var/log` while blocking writes to `/etc`, providing path-aware security controls.
+
+### Key Focus
+Implement advanced runtime isolation and security controls. Use gVisor to secure untrusted workloads, restrict kernel privileges using capabilities, and enforce system call filtering with custom Seccomp and AppArmor profiles.
+        """
+    },
+    {
+        "id": 5,
+        "title": "Module 5: Non-Intrusive eBPF Tracing, Sidecar Observability, & Engine Diagnostics",
+        "theory": """
+### Non-Intrusive Tracing using eBPF
+Traditional container observability relies on agents or library instrumentation inside the container, which adds overhead and can modify application behavior. **eBPF (Extended Berkeley Packet Filter)** solves this by allowing SREs to run sandboxed code directly in the Linux kernel. This enables non-intrusive monitoring of container system calls, network sockets, file access, and process execution from the host, with near-zero performance overhead and without modifying the container's code or configuration.
+
+### Enterprise Security Monitoring with Falco
+Falco is a cloud-native runtime security tool that uses kernel-level tracing to detect suspicious behavior. It parses system calls, compares them against a defined rule set, and generates alerts for security events, such as:
+*   An unauthorized shell execution inside a production container.
+*   Write attempts to binary directories (e.g., `/usr/bin` or `/bin`).
+*   Unauthorized reading of sensitive configuration files (e.g., `/etc/shadow`).
+
+### Sidecar Observability Patterns
+In distributed environments, direct logging to host paths can introduce disk bottlenecks and complicate log aggregation. The **Sidecar Pattern** deploys a secondary telemetry container alongside the primary application container within a shared network and storage namespace. The sidecar tails application logs, structures them into standardized JSON, and forwards them to centralized logging and monitoring systems (such as Loki, Elasticsearch, or Datadog), decoupling telemetry processing from application execution.
+
+### Diagnosing Engine Lockups and Daemon Crashes
+When a container engine becomes unresponsive or hangs under heavy load, SREs use kernel signals to diagnose the root cause:
+*   **SIGUSR1 Signal:** Sending a `SIGUSR1` signal to the Docker daemon (`dockerd`) forces it to write a complete thread dump and stack trace to its diagnostics log file, allowing SREs to locate locked threads, deadlocks, and memory leaks.
+*   **System Diagnostics:** SREs use system logs (`journalctl`) and system tracing tools (`strace`) to diagnose engine socket issues and identify hung daemon tasks.
+        """,
+        "commands": """
+### Command Reference
+
+* `bpftrace -e 'tracepoint:syscalls:sys_enter_execve { printf("%s -> %s\\n", comm, str(args->filename)); }'`  
+  Uses eBPF to trace and log all command execution events across all containers on the host.  
+* `kill -USR1 [DOCKERD_PID]`  
+  Sends a signal to the Docker daemon to write a full stack trace and thread dump to its log files.  
+* `strace -f -p [PID] -e trace=network,file`  
+  Attaches to a running container process to monitor network and file system transactions in real time.  
+* `falco -r /etc/falco/falco_rules.yaml`  
+  Starts the Falco runtime security agent to monitor and audit container behavior using kernel system call tracing.  
+* `docker stats --no-stream --format "table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}"`  
+  Retrieves a quick snapshot of resource consumption for all active containers.
+        """,
+        "examples": """
+### Real-World Examples
+
+#### Example 1: Tracing Container System Calls Non-Intrusively with eBPF
+*   **Situation:** You suspect a containerized Python application is executing unauthorized sub-processes, but the container lacks diagnostic tools and cannot be modified.
+*   **Action:** Run a `bpftrace` command on the host to monitor process execution events across the system:
+    ```bash
+    # Trace all system executions, displaying the parent command and the target binary
+    sudo bpftrace -e 'tracepoint:syscalls:sys_enter_execve { printf("PID: %d | App: %s -> Spawned: %s\\n", pid, comm, str(args->filename)); }'
+    ```
+
+#### Example 2: Detecting Suspicious Shell Spawns in Production using Falco
+*   **Situation:** Security guidelines require real-time alerts if anyone attempts to open an interactive terminal (`sh` or `bash`) inside a running production container.
+*   **Action:** Configure a Falco rule to detect shell spawn events and alert the security team:
+    ```yaml
+    # Custom Falco Rule
+    - rule: Terminal Spawned inside Production Container
+      desc: Detect shell execution inside a production container
+      condition: container.id != host and proc.name in (bash, sh) and evt.type = execve
+      output: "Warning: Terminal spawned in container (user=%user.name container_id=%container.id proc=%proc.name)"
+      priority: WARNING
+    ```
+
+#### Example 3: Deploying a Lightweight Python Sidecar for Log Processing
+*   **Situation:** Your application writes raw log data to a shared volume path. You want to parse and structure these logs into JSON format without adding overhead to the application.
+*   **Action:** Deploy a Python sidecar container that tails the log file and outputs structured logs to standard output:
+    ```python
+    import time
+    import json
+    import os
+
+    log_path = "/shared/app.log"
+
+    # Wait for the application log file to be created
+    while not os.path.exists(log_path):
+        time.sleep(1)
+
+    print("Logging sidecar started. Monitoring app.log...", flush=True)
+    with open(log_path, "r") as f:
+        # Move to the end of the file
+        f.seek(0, 2)
+        while True:
+            line = f.readline()
+            if not line:
+                time.sleep(0.5)
+                continue
+            
+            # Format raw logs as structured JSON
+            structured_log = {
+                "timestamp": time.time(),
+                "level": "INFO",
+                "message": line.strip(),
+                "origin": "sidecar-processor"
+            }
+            print(json.dumps(structured_log), flush=True)
+    ```
+
+#### Example 4: Diagnosing a Hung Docker Daemon using USR1 Signal Stack Dumps
+*   **Situation:** The Docker daemon is unresponsive, blocking all API requests, and you need to diagnose the engine-level lockup without restarting the service.
+*   **Action:** Find the daemon's PID, trigger a thread dump using the `USR1` signal, and analyze the diagnostics logs:
+    ```bash
+    # Locate the process ID of the Docker daemon
+    DOCKERD_PID=$(pgrep dockerd)
+
+    # Force dockerd to write a stack trace to system logs
+    sudo kill -USR1 $DOCKERD_PID
+
+    # Read the thread dump from journalctl logs
+    sudo journalctl -u docker.service --since "5 minutes ago" --no-pager
+    ```
+
+#### Example 5: Attaching `strace` to a Live Container Process
+*   **Situation:** A containerized Python network socket worker has locked up, and you need to inspect its active system calls in real time to locate the block.
+*   **Action:** Extract the container process PID and attach `strace` from the host system:
+    ```bash
+    # Retrieve the container's primary process ID
+    TARGET_PID=$(docker inspect --format '{{.State.Pid}}' secure-socket-app)
+
+    # Trace network and file access calls of the running process
+    sudo strace -f -p $TARGET_PID -e trace=network,file
+    ```
+        """,
+        "exercise": """
+### Hands-On Labs
+
+#### Lab 1: Auditing Container Executions using host-level eBPF Tracing
+*   **Objective:** Set up eBPF monitoring on a host to audit all process execution events inside a container without modifying its code.
+*   **Tasks:**
+    1. Install `bpftrace` on your host system.
+    2. Write an eBPF script that traces system executions (`sys_enter_execve`) and prints the container namespace ID, process name, and target executable.
+    3. Start an application container and execute various commands (e.g., `apt-get update`, `ls`, `curl`) inside it.
+    4. Verify that the host's eBPF script captures and displays these execution events in real time.
+    5. Write a security analysis explaining how eBPF enables non-intrusive runtime auditing.
+
+#### Lab 2: Creating a Telemetry Sidecar Stack using Docker Compose
+*   **Objective:** Deploy a shared-volume logging sidecar container to process and structure application logs.
+*   **Tasks:**
+    1. Write a Python application that writes raw log lines to a file inside a shared volume path.
+    2. Write a sidecar script that tails the log file, parses the data, structures it into JSON format, and outputs it to standard output.
+    3. Configure a `docker-compose.yml` file that deploys both services and mounts a shared volume between them.
+    4. Launch the stack and verify that the sidecar successfully parses and prints the application logs.
+    5. Spin down the stack and confirm that the sidecar decouples telemetry processing from the main application.
+
+#### Lab 3: Troubleshooting a Hung Docker Daemon using USR1 Thread Dumps
+*   **Objective:** Trigger and analyze a Docker daemon thread dump to identify locked threads and troubleshoot engine-level hangs.
+*   **Tasks:**
+    1. Verify that the Docker service is running on your host.
+    2. Send a `SIGUSR1` signal to the Docker daemon process.
+    3. Locate the generated thread dump inside the system logs (`journalctl` or `/var/log/messages`).
+    4. Analyze the thread dump to identify active goroutines, blocked threads, and system processes.
+    5. Write a diagnostic summary detailing how SREs use this signal to troubleshoot responsiveness issues under heavy loads.
+
+#### Lab 4: Configuring Falco rules to alert on security events
+*   **Objective:** Install and configure Falco to monitor and audit container behavior using kernel system call tracing.
+*   **Tasks:**
+    1. Install Falco on your host system or run it via a container.
+    2. Define a custom Falco rule that triggers an alert if anyone attempts to modify a file inside `/etc` from inside a container.
+    3. Start a container and attempt to modify a file in `/etc` to trigger the rule.
+    4. Verify that Falco captures the event and generates an alert in system logs.
+    5. Analyze the alert to confirm it displays the container ID, process name, and target file path.
+
+#### Lab 5: Diagnosing a Socket Deadlock inside a Container using `strace`
+*   **Objective:** Attach a tracer to a running container process to identify socket blockages and troubleshoot deadlocks.
+*   **Tasks:**
+    1. Deploy a containerized Python application designed to experience a socket deadlock (e.g., a process that waits indefinitely on a network socket read).
+    2. Locate the container's primary process ID (PID) on the host system.
+    3. Attach the `strace` utility from the host to trace the container process.
+    4. Analyze the real-time system call logs to locate the blocked socket call (e.g., `recvfrom` or `select`).
+    5. Solve the socket deadlock issue and verify that the application runs smoothly.
+        """,
+        "insight": """
+### Interview Q&A
+
+#### Q1: Why is eBPF tracing considered superior to running diagnostic monitoring utilities inside the application containers?
+*   **Answer:** Running diagnostic tools inside application containers increases the container's image size, adds unnecessary dependencies, and increases the attack surface by providing utilities that could be leveraged if the container is compromised. eBPF operates directly in the Linux kernel on the host system, enabling non-intrusive monitoring of all container system calls, network sockets, and file system transactions with near-zero performance overhead, and without requiring any modifications to the container itself.
+
+#### Q2: How does triggering a `SIGUSR1` dump help an SRE troubleshoot a completely unresponsive Docker daemon?
+*   **Answer:** When the Docker daemon becomes unresponsive or hangs under heavy load, standard command execution attempts (such as `docker ps` or `docker inspect`) will fail or hang. Sending a `SIGUSR1` signal to the daemon process forces it to capture a complete thread dump and stack trace of its internal processes, including Go goroutines. It writes this diagnostics dump to system logs, allowing SREs to analyze locked threads, deadlocks, and resource leaks without restarting the service.
+
+#### Q3: What are the security vulnerabilities associated with exposing the `/var/run/docker.sock` to monitoring containers, and how can they be minimized?
+*   **Answer:** The `/var/run/docker.sock` is the Unix socket that provides access to the Docker daemon API. If this socket is mounted inside a container, any process with write access can execute commands as root on the host, modify network configurations, and deploy privileged containers, which presents a significant security risk of container escape. To minimize this, SREs should avoid mounting the socket whenever possible, enforce read-only mounts if access is required, or use secure proxy tools (such as the Open Policy Agent or socket-proxy) to filter and restrict API requests.
+
+#### Q4: How do SREs configure core dumps for container processes, and why is this useful when debugging segmentation faults?
+*   **Answer:** When a containerized application crashes due to a segmentation fault (SIGSEGV), its memory contents are lost. To capture a core dump, SREs must configure the host operating system to define a core dump path (e.g., `/var/log/cores/core.%e.%p`), configure resource limits inside the container using the `--ulimit core=-1` flag, and ensure the target directory is writeable. When the container crashes, the kernel writes the memory dump to the designated path on the host, allowing SREs to analyze the core dump file using debugging tools (such as GDB) to locate the root cause of the crash.
+
+#### Q5: When should you choose a sidecar pattern for log forwarding instead of utilizing Docker's built-in logging drivers (e.g., syslog, fluentd)?
+*   **Answer:** Docker's built-in logging drivers capture stdout and stderr streams globally at the engine level, which can introduce disk I/O bottlenecks and limit flexibility if different applications require different log parsing, filtering, and routing rules. The Sidecar pattern runs a dedicated logging container alongside the application in a shared namespace, allowing for custom log parsing, enrichment, and filtering configurations on a per-service basis. This decouples log processing from both the application execution and the global container engine, improving performance and flexibility at the cost of higher resource consumption.
+
+### Key Focus
+Implement non-intrusive tracing and observability. Leverage eBPF to monitor container operations, deploy sidecar configurations for custom log processing, and use kernel signals and tracing tools to diagnose engine lockups and process deadlocks.
         """
     }
 ]
