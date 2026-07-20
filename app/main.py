@@ -104,7 +104,7 @@ def load_courses():
             if len(category_path) > 2:
                 continue
             
-            category_names = [segment.replace("_", " ").replace("-", " ").title() for segment in category_path]
+            category_names = [segment for segment in category_path]
             
             for filename in files:
                 if filename.endswith(".py") and not filename.startswith("__"):
