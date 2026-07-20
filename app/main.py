@@ -58,6 +58,26 @@ def init_db():
         
     conn.close()
 
+def load_course_file(file_path, module_name, category_path, category_names):
+    try:
+        path_joined = "_".join(category_path) if category_path else "root"
+        spec_name = f"courses_{path_joined}_{module_name}"
+        spec = importlib.util.spec_from_file_location(spec_name, file_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        
+        course_id = getattr(mod, "COURSE_ID", module_name)
+        COURSES[course_id] = {
+            "id": course_id,
+            "title": getattr(mod, "COURSE_TITLE", module_name.capitalize()),
+            "description": getattr(mod, "COURSE_DESCRIPTION", ""),
+            "category_path": category_path,
+            "category_names": category_names,
+            "curriculum": getattr(mod, "CURRICULUM_DATA", [])
+        }
+    except Exception as e:
+        print(f"[-] Failed to load course '{file_path}': {e}")
+
 def load_courses():
     global COURSES
     COURSES = {}
@@ -69,24 +89,28 @@ def load_courses():
         
     courses_dir = os.path.join(parent_dir, "courses")
     if os.path.exists(courses_dir):
-        for filename in os.listdir(courses_dir):
-            if filename.endswith(".py") and not filename.startswith("__"):
-                module_name = filename[:-3]
-                file_path = os.path.join(courses_dir, filename)
-                try:
-                    spec = importlib.util.spec_from_file_location(module_name, file_path)
-                    mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(mod)
-                    
-                    course_id = getattr(mod, "COURSE_ID", module_name)
-                    COURSES[course_id] = {
-                        "id": course_id,
-                        "title": getattr(mod, "COURSE_TITLE", module_name.capitalize()),
-                        "description": getattr(mod, "COURSE_DESCRIPTION", ""),
-                        "curriculum": getattr(mod, "CURRICULUM_DATA", [])
-                    }
-                except Exception as e:
-                    print(f"[-] Failed to load course '{filename}': {e}")
+        for root, dirs, files in os.walk(courses_dir):
+            # Avoid reading hidden directories or pycache
+            dirs[:] = [d for d in dirs if not d.startswith(".") and not d.startswith("__")]
+            
+            # Compute path segments relative to courses/
+            rel_path = os.path.relpath(root, courses_dir)
+            if rel_path == ".":
+                category_path = []
+            else:
+                category_path = rel_path.split(os.sep)
+            
+            # Support up to 2 directories of depth
+            if len(category_path) > 2:
+                continue
+            
+            category_names = [segment.replace("_", " ").replace("-", " ").title() for segment in category_path]
+            
+            for filename in files:
+                if filename.endswith(".py") and not filename.startswith("__"):
+                    module_name = filename[:-3]
+                    file_path = os.path.join(root, filename)
+                    load_course_file(file_path, module_name, category_path, category_names)
 
 # Initial load on bootstrap
 init_db()
@@ -142,7 +166,11 @@ def get_courses():
             "total_modules": len(course["curriculum"]),
             "completed_sections": valid_completed_count,
             "total_sections": total_sections,
-            "percentage": percentage
+            "percentage": percentage,
+            "category_path": course.get("category_path", []),
+            "category_names": course.get("category_names", []),
+            "category_id": course.get("category_path", ["general"])[0] if course.get("category_path") else "general",
+            "category_name": course.get("category_names", ["General"])[0] if course.get("category_names") else "General"
         })
     return output
 
