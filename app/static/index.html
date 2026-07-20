@@ -178,6 +178,41 @@
         mark.note-highlight-only mark.note-highlight-only:hover {
             background-color: #fbbf24 !important;
         }
+        #course-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+            width: 100% !important;
+        }
+        #notes-list-container {
+            display: grid !important;
+            grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+            width: 100% !important;
+            justify-items: stretch !important;
+            justify-content: stretch !important;
+        }
+        @media (min-width: 640px) {
+            #notes-list-container {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+        }
+        @media (min-width: 768px) {
+            #notes-list-container {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+        }
+        @media (min-width: 1024px) {
+            #notes-list-container {
+                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            }
+        }
+        #notes-list-container > div {
+            width: 100% !important;
+            max-width: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            box-sizing: border-box !important;
+        }
     </style>
 </head>
 <body class="bg-zinc-50 text-zinc-900 min-h-screen flex flex-row antialiased overflow-hidden h-screen w-screen">
@@ -248,8 +283,8 @@
         </div>
 
         <!-- Course Cards Grid Container -->
-        <div class="flex-1 overflow-y-auto mb-6">
-            <div id="course-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+        <div class="flex-1 overflow-y-auto mb-6 w-full">
+            <div id="course-grid" class="gap-3 w-full">
                 <!-- Loaded dynamically -->
             </div>
         </div>
@@ -400,44 +435,44 @@
     </div>
 
     <!-- Screen 3: Dedicated Note Taking Page -->
-    <div id="notes-screen" class="hidden flex-1 overflow-hidden h-full w-full flex flex-col p-6 md:p-8 max-w-5xl mx-auto">
-        <!-- Header section -->
-        <div class="flex items-center justify-between gap-4 border-b border-zinc-200 pb-4 mb-4 shrink-0">
-            <div>
-                <button onclick="backFromNotes()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-900 transition font-bold uppercase tracking-wider mb-2">
-                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back
+    <div id="notes-screen" class="hidden flex-1 overflow-hidden h-full w-full flex flex-col max-w-5xl mx-auto">
+        <div class="flex-1 overflow-y-auto w-full p-6 md:p-8 flex flex-col">
+            <!-- Header section -->
+            <div class="flex items-center justify-between gap-4 border-b border-zinc-200 pb-4 mb-4 shrink-0">
+                <div>
+                    <button onclick="backFromNotes()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-900 transition font-bold uppercase tracking-wider mb-2">
+                        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back
+                    </button>
+                    <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Study Notes</h2>
+                    <p class="text-xs text-zinc-500 mt-1">Review, search, and manage all your notes and highlighted content across all tracks.</p>
+                </div>
+                <button onclick="exportNotesMarkdown()" class="bg-zinc-950 text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition flex items-center gap-1.5 shrink-0 shadow-sm">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Notes (MD)
                 </button>
-                <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Study Notes</h2>
-                <p class="text-xs text-zinc-500 mt-1">Review, search, and manage all your notes and highlighted content across all tracks.</p>
-            </div>
-            <button onclick="exportNotesMarkdown()" class="bg-zinc-950 text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition flex items-center gap-1.5 shrink-0 shadow-sm">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Notes (MD)
-            </button>
-        </div>
-
-        <!-- Filters & Controls Row -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-            <!-- Search notes filter -->
-            <div class="relative flex-1 max-w-sm">
-                <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
-                <input type="text" id="notes-filter-search" placeholder="Search across all notes..."
-                       class="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition"
-                       oninput="renderNotesList()">
             </div>
 
-            <!-- Course select dropdown filter -->
-            <div class="flex items-center gap-2 shrink-0">
-                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Course Filter</span>
-                <select id="notes-course-filter" onchange="renderNotesList()"
-                        class="bg-white border border-zinc-200 rounded-md px-2 py-1 text-xs text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
-                    <option value="all">All Courses</option>
-                </select>
-            </div>
-        </div>
+            <!-- Filters & Controls Row -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
+                <!-- Search notes filter -->
+                <div class="relative flex-1 max-w-sm">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
+                    <input type="text" id="notes-filter-search" placeholder="Search across all notes..."
+                           class="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition"
+                           oninput="renderNotesList()">
+                </div>
 
-        <!-- Note Cards Grid (Scrollable) -->
-        <div class="flex-1 overflow-y-auto">
-            <div id="notes-list-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Course select dropdown filter -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Course Filter</span>
+                    <select id="notes-course-filter" onchange="renderNotesList()"
+                            class="bg-white border border-zinc-200 rounded-md px-2 py-1 text-xs text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
+                        <option value="all">All Courses</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Note Cards Grid -->
+            <div id="notes-list-container" class="gap-4 w-full">
                 <!-- Note cards loaded here dynamically -->
             </div>
         </div>
@@ -677,6 +712,10 @@
             else if (hash === "#/notes") {
                 state.activeView = 'notes';
                 document.getElementById("notes-screen").classList.remove("hidden");
+                
+                if (state.courses.length === 0) {
+                    await fetchCourses();
+                }
                 
                 const select = document.getElementById("notes-course-filter");
                 if (select) {
