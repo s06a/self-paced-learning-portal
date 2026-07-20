@@ -1,0 +1,5 @@
+# Enforce automatic line normalization for general text files.
+* text=auto
+
+# Explicitly ensure that all shell scripts use Unix line endings (LF) on checkout.
+*.sh text eol=lf

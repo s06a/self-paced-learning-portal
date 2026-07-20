@@ -12,7 +12,7 @@ mkdir -p app/static
 mkdir -p courses
 
 # 2. Check for Python 3
-if ! command -v python3 &> /dev/null; then
+if ! command -v python3 > /dev/null 2>&1; then
     echo "Error: python3 is not installed. Please install it to continue."
     exit 1
 fi
