@@ -53,11 +53,11 @@ http://127.0.0.1:8000
 To add a new course, create a Python file (e.g., `ansible.py`) inside the `/courses` directory [1]. The platform automatically detects and loads new Python curricula on the next page refresh [1].
 
 To maintain an educational standard, each module in a custom curriculum is structured into 5 interactive tabs [1]:
-1. **Core Concepts (Theory)**: Conceptual overview [1].
-2. **Command Reference**: Common CLI commands [1].
-3. **Real-World Examples**: Exactly 5 practical application examples [1].
-4. **Hands-On Lab**: Exactly 5 sequential exercises [1].
-5. **Interview Q&As (Insight)**: Exactly 5 deep-dive question-and-answer pairs [1].
+1. **Core Concepts (Theory)**: Conceptual overview under major topic-focused headings [1].
+2. **Command & Syntax Reference**: Common CLI commands, programming language syntax, and structural rules with brief descriptions and usage notes [1].
+3. **Real-World Examples**: Multiple practical, scenario-based application examples using **Situation** and **Action** structures [1].
+4. **Hands-On Lab**: Multiple sequential hands-on exercises using **Objective** and **Tasks** structures [1].
+5. **Interview Q&As (Insight)**: Deep-dive question-and-answer pairs, potentially accompanied by specific certification study focus points [1].
 
 ---
 

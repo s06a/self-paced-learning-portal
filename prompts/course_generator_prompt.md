@@ -27,15 +27,18 @@ Define these exact global variables at the top of the file:
 ### Module Schema:
 Each module dictionary in CURRICULUM_DATA must follow this schema:
 - "id" (int): Sequential integer starting from 1.
-- "title" (string): The module title.
-- "theory" (string): Educational explanation of core concepts under a "### Core Concepts" heading.
-- "commands" (string): Essential CLI commands wrapped inside a ```bash ... ``` block with clear inline comments.
-- "examples" (string): Exactly 5 real-world technical scenarios. Define each using "#### Scenario 1: [Name]", "#### Scenario 2: [Name]" up to "#### Scenario 5: [Name]". Each scenario must contain realistic configuration code (YAML, Python, JSON, etc.) and must be fully written with ZERO placeholders (do not use comments like "# ... insert rest of code").
-- "exercise" (string): Exactly 5 sequential, step-by-step local hands-on instructions under a "### Lab Assignment" heading. Label them "1. ...", "2. ...", up to "5. ...".
-- "insight" (string): Exactly 5 high-quality certification/interview Q&As under a "### Certified Prep Queries" heading. Format each explicitly as bold:
-  **Q1: [Technical Question]**
-  **A1: [Detailed expert response]**
-  ... up to **Q5:** and **A5:**.
+- "title" (string): The module title (e.g., "Module 1: Kubernetes Core Architecture & Declarative Primitives").
+- "theory" (string): Triple-quoted string (`"""`). Educational explanation of core concepts structured under relevant H3 headings (e.g., `### The Kubernetes Paradigm`, `### Control Plane vs. Worker Nodes`). Do not use a single generic heading.
+- "commands" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Command & Syntax Reference` followed by standard markdown listing essential commands, operators, keywords, or syntax rules (either as bullet points with descriptions or as formatted code blocks with clear inline comments). If the target course is about a programming language or a tool with specific structural syntax, focus heavily on the syntax, constructs, grammar, and keywords the student needs to master.
+- "examples" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Real-World Examples` followed by multiple realistic scenarios defined using H4 headings: `#### Example 1: [Title]`. Each example must follow this structure:
+  * **Situation:** [Context/scenario details]
+  * **Action:** [Explanation of solution]
+  followed by fully-formed configuration files (YAML, Python, JSON, etc.) inside code blocks with ZERO placeholders (do not use comments like "# ... insert rest of code").
+- "exercise" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Hands-On Labs` followed by multiple sequential step-by-step local hands-on exercises defined using H4 headings: `#### Lab 1: [Title]`. Each lab must follow this structure:
+  * **Objective:** [Goal/outcome of the lab]
+  * **Tasks:**
+    1. [Step-by-step task details]
+- "insight" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Interview Q&A` followed by multiple certification/interview Q&As defined using H4 headings: `#### Q1: [Technical Question]`, and bulleted answers starting with `* **Answer:** [Detailed expert response]`. You can also append specialized study tips or exam-specific guidelines under an H3 heading (e.g., `### CKA Exam Focus`).
 
 ### Strict Formatting and Quality Rules:
 - COMPREHENSIVE COVERAGE: Generate as many distinct, sequential modules inside CURRICULUM_DATA as necessary to fully and comprehensively cover the user's requested subject. Do not artificially limit the course to a single module if the topic requires deeper coverage.
