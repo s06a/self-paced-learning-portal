@@ -30,18 +30,19 @@ Each module dictionary in CURRICULUM_DATA must follow this schema:
 - "title" (string): The module title (e.g., "Module 1: Kubernetes Core Architecture & Declarative Primitives").
 - "theory" (string): Triple-quoted string (`"""`). Educational explanation of core concepts structured under relevant H3 headings (e.g., `### The Kubernetes Paradigm`, `### Control Plane vs. Worker Nodes`). Do not use a single generic heading.
 - "commands" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Command & Syntax Reference` followed by standard markdown listing essential commands, operators, keywords, or syntax rules (either as bullet points with descriptions or as formatted code blocks with clear inline comments). If the target course is about a programming language or a tool with specific structural syntax, focus heavily on the syntax, constructs, grammar, and keywords the student needs to master.
-- "examples" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Real-World Examples` followed by multiple realistic scenarios defined using H4 headings: `#### Example 1: [Title]`. Each example must follow this structure:
+- "examples" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Real-World Examples` followed by exactly 5 realistic scenarios defined using H4 headings: `#### Example 1: [Title]` through `#### Example 5: [Title]`. Each of the 5 examples must follow this structure:
   * **Situation:** [Context/scenario details]
   * **Action:** [Explanation of solution]
   followed by fully-formed configuration files (YAML, Python, JSON, etc.) inside code blocks with ZERO placeholders (do not use comments like "# ... insert rest of code").
-- "exercise" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Hands-On Labs` followed by multiple sequential step-by-step local hands-on exercises defined using H4 headings: `#### Lab 1: [Title]`. Each lab must follow this structure:
+- "exercise" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Hands-On Labs` followed by exactly 5 sequential step-by-step local hands-on exercises defined using H4 headings: `#### Lab 1: [Title]` through `#### Lab 5: [Title]`. Each of the 5 labs must follow this structure:
   * **Objective:** [Goal/outcome of the lab]
   * **Tasks:**
     1. [Step-by-step task details]
-- "insight" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Interview Q&A` followed by multiple certification/interview Q&As defined using H4 headings: `#### Q1: [Technical Question]`, and bulleted answers starting with `* **Answer:** [Detailed expert response]`. You can also append specialized study tips or exam-specific guidelines under an H3 heading (e.g., `### CKA Exam Focus`).
+- "insight" (string): Triple-quoted string (`"""`). Starts with an H3 header `### Interview Q&A` followed by exactly 5 certification/interview Q&As defined using H4 headings: `#### Q1: [Technical Question]` through `#### Q5: [Technical Question]`, and bulleted answers starting with `* **Answer:** [Detailed expert response]`. You can also append specialized study tips or exam-specific guidelines under an H3 heading (e.g., `### CKA Exam Focus`).
 
 ### Strict Formatting and Quality Rules:
-- COMPREHENSIVE COVERAGE: Generate as many distinct, sequential modules inside CURRICULUM_DATA as necessary to fully and comprehensively cover the user's requested subject. Do not artificially limit the course to a single module if the topic requires deeper coverage.
+- COMPREHENSIVE COVERAGE: Generate as many distinct, sequential modules inside CURRICULUM_DATA as necessary to completely cover all dimensions of the requested subject area. Do not artificially truncate or limit the course to a single module if the topic warrants deeper structural breakdown; cover all major concepts fully.
+- EXACT COUNT RULE: Each generated module must always contain exactly 5 real-world examples, exactly 5 hands-on labs, and exactly 5 interview Q&A pairs. Do not skip or combine any entries.
 - NO PLACEHOLDERS: Do not use comments like "# ... add more logic here". Provide full, fully formed configurations.
 - ESCAPING: Wrap all multi-line strings in Python triple-quotes (either """ or ''') safely so the file parses without syntax errors.
 
