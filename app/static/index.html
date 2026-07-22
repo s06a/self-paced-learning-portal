@@ -149,9 +149,24 @@
         .dark select,
         .dark input,
         .dark button,
-        .dark div,
         .dark aside {
             border-color: #2d2d30 !important;
+        }
+
+        /* Distinct and recognizable cards styling */
+        .dark #course-grid > div,
+        .dark #notes-list-container > div,
+        .dark #pomodoro-stats-panel {
+            background-color: #252526 !important;
+            border-color: #38383a !important;
+            transition: background-color 0.15s ease, border-color 0.15s ease !important;
+        }
+
+        /* Subtle color change on hover to make cards recognizable, with zero movement/zoom */
+        .dark #course-grid > div:hover,
+        .dark #notes-list-container > div:hover {
+            background-color: #2c2c2e !important;
+            border-color: #4a4a4d !important;
         }
 
         /* Hover background for buttons, lists, and inputs */
