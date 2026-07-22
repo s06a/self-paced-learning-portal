@@ -61,6 +61,7 @@ Each module dictionary in CURRICULUM_DATA must contain these exact keys:
      - Provide exactly TWO distinct Mermaid diagrams to visualize systems:
        - Diagram 1: A static representation of components, relationships, or structural blocks (`graph TD`, `graph LR`, or class diagram).
        - Diagram 2: A dynamic chronological sequence or state diagram (`sequenceDiagram` or `stateDiagram-v2`) simulating state transitions, execution sequences, transaction life cycles, packet movement, or signal timing transitions over time.
+     - **Mermaid Sizing & Text Constraints**: Keep all node labels and arrow text highly concise (ideally 2-4 words, maximum 35 characters per node or label). Never embed raw configuration blocks, terminal outputs, code snippets, or long sentences inside diagram nodes or notes. Use clean layout structures to prevent oversized diagrams that overflow standard displays.
   
   3. `### Under-the-Hood Mechanics & Internal Operations`
      - Explain the low-level execution path, compiler optimizations, kernel-level operations, browser rendering cycles, or network packets.
@@ -111,6 +112,7 @@ Each module dictionary in CURRICULUM_DATA must contain these exact keys:
 ### Quality & Syntax Constraints:
 - Strict JSON/Python parsing: Ensure all internal quotation marks inside the strings are escaped correctly. Use Python's raw triple quotes `r"""` if handling regex patterns, mathematical LaTeX symbols containing backslashes, or heavy backslash formatting to prevent escaping errors.
 - Never abbreviate or truncate code or formulas. Provide the complete files, configurations, or manifests.
+- **Mermaid Rendering Rules**: Ensure all Mermaid syntax is standard and valid. Keep text within nodes highly summarized to avoid rendering overly complex, large diagrams or causing display overflows on student workspaces.
 ```
 
 Generate the complete, highly rigorous curriculum module file for the subject described below:

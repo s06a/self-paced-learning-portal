@@ -1,6 +1,6 @@
 # Docker Junior Level Course Definition (SRE & DevOps Track)
 COURSE_ID = "docker-junior-sre-ops"
-COURSE_TITLE = "Docker Fundamentals & Operations for SRE/DevOps (Level 1)"
+COURSE_TITLE = "Docker Junior Level"
 COURSE_DESCRIPTION = "Master SRE container orchestration fundamentals. Architect single-host multi-container applications, design highly optimized multi-stage build pipelines, manage complex local networks and volumes, and configure high-performance production-grade stacks using Docker Compose."
 
 CURRICULUM_DATA = [
@@ -16,52 +16,52 @@ In contrast, a container is like a partitioned, modular office suite inside a si
 The Docker engine operates on a client-server architecture, which we can compare to a high-end restaurant:
 - **The Docker Client (CLI):** This is the front-of-house waiter. It receives your orders (commands like `docker run`), validates your input, and routes them via API protocols to the kitchen.
 - **The Docker Daemon (`dockerd`):** This is the master kitchen team. Running continuously in the background on the host OS, it listens for API commands, manages ingredients (images), and cooks the dishes (executing containers).
-- **The Registry (Docker Hub):** This is the global recipe book and wholesale supplier. It stores pre-built templates of software stacks, ready to be pulled into the kitchen whenever a customer requests them.
+- **The Registry (Docker Hub):** This is the global recipe book and wholesale supplier. It stores templates of software stacks, ready to be pulled into the kitchen whenever a customer requests them.
 
 ### Architectural, Lifecycle & Flow Blueprints
 The SRE-grade operational topology below details the interaction boundaries between user spaces, the docker client, background system daemons, low-level OCI runtimes, and host kernel namespaces:
 
 ```mermaid
 graph TD
-    subgraph UserSpace [User Space & CLI Boundary]
+    subgraph UserSpace [User Space CLI]
         CLI[Docker Client / CLI]
     end
-    subgraph DaemonSpace [Docker Daemon Host Subsystem]
-        Socket[UNIX Domain Socket: /var/run/docker.sock]
-        Dockerd[Docker Daemon: dockerd]
-        Containerd[Supervisor Runtime: containerd]
-        Runc[OCI Low-Level Runtime: runc]
+    subgraph DaemonSpace [Daemon Subsystem]
+        Socket[UNIX Socket: docker.sock]
+        Dockerd[Daemon: dockerd]
+        Containerd[Supervisor: containerd]
+        Runc[OCI Runtime: runc]
     end
-    subgraph KernelSpace [Host Kernel Subsystem]
-        Namespaces[Linux Namespaces: pid, net, mnt, ipc, uts, user]
-        Cgroups[Control Groups: CPU, Memory, I/O, PIDs]
+    subgraph KernelSpace [Kernel Subsystem]
+        Namespaces[Linux Namespaces]
+        Cgroups[Control Groups]
     end
-    subgraph External [External Repositories]
-        Registry[Docker Registry / Hub]
+    subgraph External [External Repos]
+        Registry[Docker Registry]
     end
 
-    CLI -->|REST API over HTTP| Socket
+    CLI -->|REST over HTTP| Socket
     Socket --> Dockerd
-    Dockerd -->|gRPC Engine Calls| Containerd
+    Dockerd -->|gRPC Calls| Containerd
     Containerd -->|Spawns| Runc
-    Runc -->|Configures Isolations| Namespaces
-    Runc -->|Enforces Resource Limits| Cgroups
-    Dockerd <-->|Pulls / Pushes Images| Registry
+    Runc -->|Isolates| Namespaces
+    Runc -->|Limits Resources| Cgroups
+    Dockerd <-->|Pushes / Pulls| Registry
 ```
 
 When containers are managed, they transition through specific operational states controlled by Linux kernel system calls. The state transition pipeline below maps how SRE commands alter container process allocations:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Created : docker create (Allocates namespaces & filesystem layer)
-    Created --> Running : docker start (Spawns PID 1 process)
-    Running --> Paused : docker pause (Freezes processes via cgroup freezer)
-    Paused --> Running : docker unpause (Resumes process scheduling)
-    Running --> Stopped : docker stop (Sends SIGTERM, then SIGKILL after grace period)
-    Running --> Exited : PID 1 process terminates / exits
-    Stopped --> Running : docker start (Allocates fresh runtime process)
-    Stopped --> [*] : docker rm (Destroys namespaces & writeable layer)
-    Exited --> [*] : docker rm (Destroys namespaces & writeable layer)
+    [*] --> Created : docker create
+    Created --> Running : docker start
+    Running --> Paused : docker pause
+    Paused --> Running : docker unpause
+    Running --> Stopped : docker stop
+    Running --> Exited : PID 1 exits
+    Stopped --> Running : docker start
+    Stopped --> [*] : docker rm
+    Exited --> [*] : docker rm
 ```
 
 ### Under-the-Hood Mechanics & Internal Operations
@@ -450,34 +450,38 @@ The diagram below details the architecture of an Overlay2 Union File System, sho
 
 ```mermaid
 graph TD
-    subgraph ContainerSpace [Container Runtime View]
-        Merged[/Unified Merged View - /var/lib/docker/overlay2/merged\]
+    subgraph ContainerView [Container Mount View]
+        Merged[/Unified Merged View/]
     end
     subgraph StorageLayers [Overlay2 Storage Directories]
-        Upper[Container Writeable Layer - upperdir]
-        Work[Docker Work Directory - workdir]
-        LayerN[Application Source Layer - lowerdir N]
-        Layer2[Dependencies Layer - lowerdir 2]
-        Layer1[Base OS Image Layer - lowerdir 1]
+        Upper[Writeable Layer: upperdir]
+        Work[Work Directory: workdir]
+        LayerN[Source Layer: lowerdir N]
+        Layer2[Dependencies: lowerdir 2]
+        Layer1[Base OS: lowerdir 1]
     end
 
-    Merged -->|Combines Layers| Upper
-    Merged -->|Combines Layers| LayerN
-    Merged -->|Combines Layers| Layer2
-    Merged -->|Combines Layers| Layer1
-    Upper -.->|Copy-on-Write Operation| LayerN
+    Merged -->|Merges| Upper
+    Merged -->|Merges| LayerN
+    Merged -->|Merges| Layer2
+    Merged -->|Merges| Layer1
+    Upper -.->|Copy-on-Write| LayerN
 ```
 
-The flowchart below traces Docker's layer cache validation process during builds. Notice how any file modification instantly invalidates all subsequent layer caches:
+The flowchart below traces Docker's layer cache validation process during builds chronologically, demonstrating step validation and cache misses:
 
 ```mermaid
-graph TD
-    Step1[Step 1: FROM python:3.10-slim] -->|Cache Hit| Step2[Step 2: WORKDIR /app]
-    Step2 -->|Cache Hit| Step3[Step 3: COPY requirements.txt .]
-    Step3 -->|Cache Hit| Step4[Step 4: RUN pip install -r requirements.txt]
-    Step4 -->|Source File Changed| Step5[Step 5: COPY src/ . - CACHE INVALIDATED]
-    Step5 -->|Must Rebuild Layer| Step6[Step 6: EXPOSE 5000]
-    Step6 -->|Must Rebuild Layer| Step7[Step 7: CMD python app.py]
+sequenceDiagram
+    participant CLI as BuildKit Engine
+    participant Cache as Local Layer Cache
+    participant Registry as Base Registry
+    CLI->>Registry: Pull python:3.10-slim
+    CLI->>Cache: Match WORKDIR /app (Hit)
+    CLI->>Cache: Match COPY reqs.txt (Hit)
+    CLI->>Cache: Match RUN pip install (Hit)
+    Note over CLI,Cache: Source File Changed
+    CLI->>Cache: Match COPY src/ (Miss)
+    CLI->>CLI: Rebuild COPY & downstream layers
 ```
 
 ### Under-the-Hood Mechanics & Internal Operations
@@ -559,35 +563,32 @@ All Dockerfile instructions (`FROM`, `RUN`, `CMD`, `COPY`, `USER`), layer cachin
         "commands": r"""
 ### Technical & Syntax Reference Manual
 
-#### Dockerfile Instruction Reference Table
-| Instruction | Parameter Format | Expected Actions | Strict Constraints |
+#### 1. Dockerfile Syntactical Schema
+##### **Anatomy & Boundary Table**
+| Variable / Parameter / Keyword Name | Expected Type / Allowed Values / Interface Bounds | Default Value / Operating Domain | Strict Structural Constraints |
 |:---|:---|:---|:---|
-| `FROM` | `image:tag` or `image@digest` | Sets the base image for downstream instructions. | Must be the very first instruction in the Dockerfile. |
-| `WORKDIR` | `/path/to/directory` | Creates the directory and sets it as the active working directory. | Use absolute paths to prevent unexpected behaviors. |
-| `COPY` | `--from=stage source dest` | Copies files from the host or other build stages. | Source paths must be within the active build context. |
-| `RUN` | `command` or `["exec", "arg"]` | Executes commands and saves the changes as a new layer. | Chain commands using `&&` and clear caches to keep images small. |
-| `ENV` | `KEY=VALUE` | Sets persistent environment variables inside the image. | Available during both image build and container runtime. |
-| `ARG` | `KEY=VALUE` | Declares variables that users can pass at build-time. | Only available during the build process; not persisted in the running container. |
-| `USER` | `username` or `UID:GID` | Sets the user context for downstream instructions and runtime. | Always use an unprivileged user in production to improve security. |
-| `EXPOSE` | `port/protocol` | Documents which ports the container intends to use at runtime. | purely documentational; does not publish ports automatically. |
-| `VOLUME` | `["/path"]` | Creates a mount point inside the container filesystem. | Any data written to this path bypasses the writeable layer. |
-| `ENTRYPOINT`| `["exec", "arg"]` | Configures the binary that will always run when the container starts. | Use the JSON exec form to ensure signals are handled correctly. |
-| `CMD` | `["arg1", "arg2"]` | Provides default arguments for the entrypoint. | Overridden if arguments are passed to `docker run`. |
+| `FROM` | String format: `image:tag` or `image@digest` | None | Must be the very first instruction in the Dockerfile. |
+| `WORKDIR` | Absolute or relative directory path string | `/` (root) | Creates target directories if missing; absolute paths are highly recommended. |
+| `COPY` | Option flags and source/destination strings | None | Source paths must reside within the active host build context. |
+| `RUN` | Command string or array of strings | None | Executes inside the intermediate container; saves results as a new layer. |
+| `ENV` | Key-value pairs (`KEY=VALUE`) | None | Environment values persist across build compilation and container runtime. |
+| `ARG` | Key-value pairs (`KEY=VALUE`) | None | Temporary variables restricted to build time; excluded from run environments. |
+| `USER` | User identifier string or `UID:GID` integers | `root` | Dictates the executing user account context for subsequent commands. |
+| `EXPOSE` | Network port integer / transport protocol | None | Purely documentational; does not publish or bind ports. |
+| `VOLUME` | Array of strings (`["/path"]`) | None | Creates a local host bypass mount for ephemeral disk layers. |
+| `ENTRYPOINT` | Array of strings (`["exec", "arg"]`) | None | Configures the default base binary run executing on initialization. |
+| `CMD` | Array of strings or default parameter string | None | Provides default variables to the entrypoint; overridden by CLI args. |
 
-#### Image Compilation Syntax
+#### 2. Image Build Automation Command
 ```bash
-# Build an image from a local directory
-docker build -t IMAGE_NAME:TAG .
-
-# Build an image using build-time arguments
-docker build --build-arg VERSION=1.2.0 -t IMAGE_NAME:TAG .
-
-# Build an image ignoring cached layers
-docker build --no-cache -t IMAGE_NAME:TAG .
-
-# View the layer-by-layer build history of an image
-docker history IMAGE_NAME:TAG
+docker build [OPTIONS] PATH | URL | -
 ```
+##### **Anatomy & Boundary Table**
+| Variable / Parameter / Keyword Name | Expected Type / Allowed Values / Interface Bounds | Default Value / Operating Domain | Strict Structural Constraints |
+|:---|:---|:---|:---|
+| `-t` or `--tag` | String format: `name:tag` | None | Registers a name and optional tag to the final image. |
+| `--build-arg` | Key-value pairs (`KEY=VALUE`) | None | Passes runtime values to matching `ARG` definitions within the Dockerfile. |
+| `--no-cache` | Boolean flag | False | Directs BuildKit to ignore existing cached layers, forcing cold compilation. |
 """,
         "examples": r"""
 ### Real-World Case Studies & Applied Examples
@@ -851,38 +852,34 @@ The diagram below details how the Docker engine routes network traffic on a sing
 
 ```mermaid
 graph LR
-    subgraph HostNetwork [Host Operating System Network Stack]
+    subgraph HostNet [Host Network Stack]
         Eth0((Physical NIC - eth0))
-        Iptables{iptables Routing & NAT}
-        Docker0[Bridge Interface - docker0<br>172.17.0.1/16]
+        Iptables{iptables NAT Routing}
+        Docker0[Bridge NIC - docker0]
     end
-    subgraph ContainerIsolated [Container Network Namespace]
-        VethA[Virtual Ethernet - veth0]
-        ContNIC[Container NIC - eth0<br>172.17.0.2]
+    subgraph ContainerNet [Container Namespace]
+        VethA[Virtual Link - veth0]
+        ContNIC[Container eth0]
     end
 
-    Eth0 <-->|Incoming Traffic Port: 8080| Iptables
-    Iptables <-->|Port Translation NAT| Docker0
-    Docker0 <-->|Virtual Link Wire| VethA
+    Eth0 <-->|Port: 8080| Iptables
+    Iptables <-->|Port Translation| Docker0
+    Docker0 <-->|Veth Pair| VethA
     VethA <--> ContNIC
 ```
 
-The diagram below details our three storage topologies, mapping how data flows from various storage types to the container's unified mount point:
+The flow diagram below represents the dynamic execution path of a write operation targeted at each of the three single-host storage models:
 
 ```mermaid
-graph TD
-    subgraph ContainerMount [Container Virtual Directory]
-        MntPoint[/app/data]
-    end
-    subgraph HostStorage [Host Storage Locations]
-        Bind[/absolute/host/path]
-        Volume[(Named Volume:<br>/var/lib/docker/volumes/)]
-        Tmp[Host RAM Memory]
-    end
+sequenceDiagram
+    participant App as Container Application
+    participant Bind as Bind Mount (Host Path)
+    participant Vol as Named Volume (Docker Var)
+    participant Tmp as Tmpfs Mount (Host RAM)
 
-    MntPoint -->|Mapped via Bind Mount| Bind
-    MntPoint -->|Mapped via Named Volume| Volume
-    MntPoint -->|Mapped via Tmpfs| Tmp
+    App->>Bind: Write logs (Direct Host I/O)
+    App->>Vol: Write DB record (Managed I/O)
+    App->>Tmp: Write transient key (RAM only)
 ```
 
 ### Under-the-Hood Mechanics & Internal Operations
@@ -952,45 +949,35 @@ All port mappings, volume configurations, network drivers, and IP resolutions ut
         "commands": r"""
 ### Technical & Syntax Reference Manual
 
-#### 1. Volume Management Syntax
+#### 1. Volume and Storage Mount Parameters
+##### **Anatomy & Boundary Table**
+| Variable / Parameter / Keyword Name | Expected Type / Allowed Values / Interface Bounds | Default Value / Operating Domain | Strict Structural Constraints |
+|:---|:---|:---|:---|
+| `-v` (Volume Mount) | String format: `volume_name:/target/path` | None | The named volume must be alphanumeric and registered inside dockerd. |
+| `-v` (Bind Mount) | String format: `/absolute/host/path:/target/path` | None | Requires an absolute host path directory; paths with spaces must be quoted. |
+| `--tmpfs` | String format: `/target/path:options` | None | Restricted to Linux host environments; writes target data directly to RAM. |
+
+#### 2. Network Interface Allocation Parameters
+##### **Anatomy & Boundary Table**
+| Variable / Parameter / Keyword Name | Expected Type / Allowed Values / Interface Bounds | Default Value / Operating Domain | Strict Structural Constraints |
+|:---|:---|:---|:---|
+| `--driver` | String: `bridge`, `host`, `none` | `bridge` | Dictates the isolation architecture and routing system call configuration. |
+| `--network` | String value referencing network name | `bridge` | Binds the target container to a specific network daemon interface. |
+
+#### 3. Network & Storage Lifecycle Operations
 ```bash
 # Create a named volume
 docker volume create VOLUME_NAME
 
-# List all active named volumes
-docker volume ls
-
 # Inspect volume details (reveals host physical mountpoint)
 docker volume inspect VOLUME_NAME
 
-# Delete a named volume
-docker volume rm VOLUME_NAME
-```
-
-#### 2. Network Management Syntax
-```bash
 # Create a custom network
 docker network create --driver DRIVER_TYPE NETWORK_NAME
 
-# List all local networks
-docker network ls
-
-# Inspect network details (reveals allocated subnets and connected containers)
-docker network inspect NETWORK_NAME
-
 # Connect a running container to a network
 docker network connect NETWORK_NAME CONTAINER_NAME
-
-# Disconnect a container from a network
-docker network disconnect NETWORK_NAME CONTAINER_NAME
 ```
-
-#### 3. Mounting Reference Table
-| Mounting Type | Syntax Parameter | Default Path / Directory | Recommended Use Cases |
-|:---|:---|:---|:---|
-| **Named Volume** | `-v volume_name:/container/path` | `/var/lib/docker/volumes/` | Production databases, persistent files, cross-container shared storage. |
-| **Bind Mount** | `-v /absolute/host/path:/container/path` | Defined by host system path | Local code development, configuration overrides, host system monitoring. |
-| **Tmpfs Mount**| `--tmpfs /container/path` | Host System Memory (RAM) | Security keys, high-frequency transient files, ephemeral state caching. |
 """,
         "examples": r"""
 ### Real-World Case Studies & Applied Examples
@@ -1199,7 +1186,7 @@ docker network disconnect NETWORK_NAME CONTAINER_NAME
     Remember that the `host` network driver binds directly to host ports. Ensure no other service on your host is using the same ports before testing.
 """,
         "insight": r"""
-### Interview Q&A
+### Professional Interview & Advanced Deep Dive
 
 #### Q1: What is the primary operational difference between a Bind Mount and a Named Volume?
 * **Answer:** A bind mount maps a user-defined absolute path on the host system to a directory inside the container, making it ideal for local code development. A named volume is managed entirely by Docker inside its storage directory (usually `/var/lib/docker/volumes/`). Named volumes are highly secure, decoupled from host-specific directory paths, and are preferred for persistent production storage.
@@ -1237,43 +1224,41 @@ The diagram below details a three-tier architecture orchestrated via Docker Comp
 ```mermaid
 graph TD
     subgraph HostSystem [Docker Host System]
-        subgraph WebNet [Frontend Web Network]
-            react[React Frontend Container<br>Port 80]
-            node_api[Node API Container<br>Port 3000]
+        subgraph WebNet [Web Network]
+            react[React Web Container]
+            api[Node API Container]
         end
-        subgraph DbNet [Backend DB Network]
-            postgres[PostgreSQL Database Container<br>Port 5432]
+        subgraph DbNet [DB Network]
+            postgres[Postgres DB Container]
         end
         subgraph Persistence [Storage Layer]
             db_volume[(Named Volume: pg_data)]
         end
     end
 
-    client[External Client] -->|Exposed Port: 80| react
-    react -->|API Queries| node_api
-    node_api -->|Database Queries| postgres
+    client[External Client] -->|Port 80| react
+    react -->|API Calls| api
+    api -->|DB Queries| postgres
     postgres -->|Persists Data| db_volume
-
-    classDef default fill:#f9f,stroke:#333,stroke-width:2px;
 ```
 
 The flow diagram below details our startup coordination sequence, showing how active health checks guarantee that our backend API starts only after the database is fully initialized:
 
 ```mermaid
 sequenceDiagram
-    participant Compose as Docker Compose Engine
+    participant Engine as Compose Engine
     participant DB as PostgreSQL Container
-    participant API as Backend API Container
+    participant API as API Container
 
-    Compose->>DB: Spin up database container processes
-    DB->>DB: Initialize database engine & files
+    Engine->>DB: Start container processes
+    DB->>DB: Run migrations & seeding
     loop Health Check Probes
-        Compose->>DB: Query health status (pg_isready)
-        DB-->>Compose: Return status (not ready / initializing)
+        Engine->>DB: Query health (pg_isready)
+        DB-->>Engine: Return status (initializing)
     end
-    DB-->>Compose: Return status (healthy & accepting connections)
-    Compose->>API: Spin up API container processes
-    API->>DB: Establish secure database connection pool
+    DB-->>Engine: Return status (healthy)
+    Engine->>API: Start API container
+    API->>DB: Establish database connection
 ```
 
 ### Under-the-Hood Mechanics & Internal Operations
@@ -1349,20 +1334,20 @@ Every multi-service mapping, environment block, network bridge, volume definitio
         "commands": r"""
 ### Technical & Syntax Reference Manual
 
-#### Docker Compose Configuration Reference Table
-| Configuration Key | Expected Type / Values | Default Value | Strict Constraints / Formatting Rules |
+#### 1. Docker Compose Declarative Configuration Specification
+##### **Anatomy & Boundary Table**
+| Variable / Parameter / Keyword Name | Expected Type / Allowed Values / Interface Bounds | Default Value / Operating Domain | Strict Structural Constraints |
 |:---|:---|:---|:---|
-| `services` | Block list | None | Defines the collection of container services that make up the stack. |
-| `image` | String | None | Specifies the image to pull or build for the container. |
-| `build` | Block configuration or string path | None | Configures the path to the Dockerfile to compile. |
-| `ports` | List of string mappings | None | Must use quotes: `- "HOST_PORT:CONTAINER_PORT"` to prevent sexagesimal parsing. |
-| `volumes` | List of string mappings | None | Formatted as `host_path:container_path` or `volume_name:container_path`. |
-| `environment` | List or dictionary of variables | None | Declares environment variables passed to the container. |
-| `networks` | List of string identifiers | Default bridge | Connects the container to one or more user-defined networks. |
-| `depends_on` | Block list or dictionary | None | Configures service startup dependencies and health conditions. |
-| `healthcheck` | Block configuration | None | Configures diagnostic checks to monitor container health. |
+| `services` | Block structure map definition | None | Directs Compose which container definitions to load into execution space. |
+| `image` | String mapping pointing to image tag | None | Dictates the exact baseline software package to execute. |
+| `ports` | Array of string definitions | None | Must enclose value arguments in double quotes to prevent base-60 casting. |
+| `volumes` | Array of mapped storage definitions | None | Supports both system path mapping (bind) or system-declared volumes. |
+| `environment` | Key-value dictionary or array of variables | None | Translates environment values to runtime container configurations. |
+| `networks` | Array of networks definitions | Default network | Anchors execution processes to specific custom local networks. |
+| `depends_on` | Block structural array or schema map | None | Controls ordering operations and can assert strict health check criteria. |
+| `healthcheck` | Block configuration parameters | None | Asserts check conditions used to verify container health metrics. |
 
-#### Docker Compose Command Reference
+#### 2. Compose Execution Operations
 ```bash
 # Start your multi-container stack in the background
 docker compose up -d
@@ -1375,12 +1360,6 @@ docker compose down
 
 # Stop your stack and delete all associated volumes (crucial for clean resets)
 docker compose down -v
-
-# View live log streams from all services in your stack
-docker compose logs -f
-
-# List the status and health of all containers in your stack
-docker compose ps
 ```
 """,
         "examples": r"""
@@ -1649,7 +1628,7 @@ docker compose ps
     If the counter resets to 1 after bringing the stack back up, check your volume definitions in `docker-compose.yml` and verify that your persistent PostgreSQL volume maps correctly.
 """,
         "insight": r"""
-### Interview Q&A
+### Professional Interview & Advanced Deep Dive
 
 #### Q1: What is the limitation of the `depends_on` parameter, and how can you ensure a database is ready before your app connects?
 * **Answer:** By default, `depends_on` only tracks whether the dependent container has started, not whether the application inside it is ready to accept connections. To ensure a database is ready, you should define a `healthcheck` on the database service and use `depends_on` with a `service_healthy` condition.
