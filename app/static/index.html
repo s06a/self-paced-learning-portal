@@ -202,6 +202,35 @@
             color: #4ec9b0 !important;
         }
 
+        /* 
+         * ==========================================
+         * TAB BUTTONS HOVER & ACTIVE STATE STYLING
+         * ==========================================
+         */
+        [role="tablist"] button {
+            background-color: transparent !important;
+            transition: border-color 0.15s ease, color 0.15s ease !important;
+        }
+        [role="tablist"] button:hover {
+            background-color: transparent !important;
+            border-color: #d4d4d8 !important; /* Tailwind zinc-300 */
+        }
+        .dark [role="tablist"] button {
+            border-color: transparent !important;
+        }
+        .dark [role="tablist"] button:hover {
+            background-color: transparent !important;
+            border-color: #52525b !important; /* Tailwind zinc-600 */
+            color: #f4f4f5 !important;
+        }
+        /* Ensure active tab borders are rendered correctly in light & dark modes */
+        [role="tablist"] button.border-zinc-900 {
+            border-color: #18181b !important; /* Tailwind zinc-900 */
+        }
+        .dark [role="tablist"] button.dark\:border-zinc-100 {
+            border-color: #f4f4f5 !important; /* Tailwind zinc-100 */
+        }
+
         .markdown-body {
             font-family: 'Geist', 'Inter', 'system-ui', -apple-system, sans-serif;
         }
