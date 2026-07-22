@@ -517,7 +517,7 @@
             <!-- Search Filter Bar -->
             <div class="relative flex-1 max-w-sm">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
-                <input type="text" id="course-filter-search" placeholder="Filter courses or categories..."
+                <input type="text" id="course-filter-search" placeholder="Search courses..."
                        class="w-full pl-9 pr-4 py-1.5 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
                        oninput="filterAndSortCourses()">
             </div>
@@ -1170,55 +1170,23 @@
             
             const P = state.currentCategoryPath || [];
             
-            if (P.length === 0) {
-                if (query) {
-                    document.getElementById("category-navigation").classList.add("hidden");
-                    let filteredCourses = state.courses.filter(c => {
-                        const titleMatch = c.title.toLowerCase().includes(query);
-                        const descMatch = c.description.toLowerCase().includes(query);
-                        const catMatch = c.category_names ? c.category_names.some(n => n.toLowerCase().includes(query)) : false;
-                        return titleMatch || descMatch || catMatch;
-                    });
-                    
-                    if (sortOpt === "name") {
-                        filteredCourses.sort((a, b) => a.title.localeCompare(b.title));
-                    } else if (sortOpt === "progress") {
-                        filteredCourses.sort((a, b) => b.percentage - a.percentage);
-                    }
-                    renderCourseGrid(filteredCourses, true);
-                } else {
-                    renderHierarchicalView([], sortOpt);
+            if (query) {
+                // Ignore folder hierarchy during active search and search globally across all courses (only courses are returned)
+                document.getElementById("category-navigation").classList.add("hidden");
+                let filteredCourses = state.courses.filter(c => {
+                    // Match strictly against the course title
+                    return c.title.toLowerCase().includes(query);
+                });
+                
+                if (sortOpt === "name") {
+                    filteredCourses.sort((a, b) => a.title.localeCompare(b.title));
+                } else if (sortOpt === "progress") {
+                    filteredCourses.sort((a, b) => b.percentage - a.percentage);
                 }
+                renderCourseGrid(filteredCourses, true);
             } else {
-                if (query) {
-                    renderHierarchicalBreadcrumbs();
-                    
-                    let filteredCourses = state.courses.filter(c => {
-                        const cPath = c.category_path || [];
-                        let matchesPath = cPath.length >= P.length;
-                        for (let i = 0; i < P.length; i++) {
-                            if (cPath[i] !== P[i]) {
-                                matchesPath = false;
-                                break;
-                            }
-                        }
-                        if (!matchesPath) return false;
-                        
-                        const titleMatch = c.title.toLowerCase().includes(query);
-                        const descMatch = c.description.toLowerCase().includes(query);
-                        const catMatch = c.category_names ? c.category_names.some(n => n.toLowerCase().includes(query)) : false;
-                        return titleMatch || descMatch || catMatch;
-                    });
-                    
-                    if (sortOpt === "name") {
-                        filteredCourses.sort((a, b) => a.title.localeCompare(b.title));
-                    } else if (sortOpt === "progress") {
-                        filteredCourses.sort((a, b) => b.percentage - a.percentage);
-                    }
-                    renderCourseGrid(filteredCourses, true);
-                } else {
-                    renderHierarchicalView(P, sortOpt);
-                }
+                // Return to hierarchical folder view when query is cleared
+                renderHierarchicalView(P, sortOpt);
             }
         }
 
