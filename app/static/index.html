@@ -10,7 +10,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -30,6 +36,9 @@
         *.is-scrolling {
             scrollbar-color: #e4e4e7 transparent;
         }
+        .dark *.is-scrolling {
+            scrollbar-color: #3f3f46 transparent;
+        }
 
         ::-webkit-scrollbar {
             width: 6px;
@@ -46,8 +55,14 @@
         .is-scrolling::-webkit-scrollbar-thumb {
             background: #e4e4e7;
         }
+        .dark .is-scrolling::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+        }
         .is-scrolling::-webkit-scrollbar-thumb:hover {
             background: #d4d4d8;
+        }
+        .dark .is-scrolling::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
         }
 
         .markdown-body {
@@ -62,12 +77,18 @@
             margin-bottom: 1rem;
             color: #09090b;
         }
+        .dark .markdown-body h1 {
+            color: #f4f4f5;
+        }
         .markdown-body h2 {
             font-size: 1.6em;
             font-weight: 750;
             margin-top: 1.75rem;
             margin-bottom: 0.85rem;
             color: #18181b;
+        }
+        .dark .markdown-body h2 {
+            color: #f4f4f5;
         }
         .markdown-body h3 {
             font-size: 1.4em;
@@ -76,6 +97,9 @@
             margin-bottom: 0.75rem;
             color: #18181b;
         }
+        .dark .markdown-body h3 {
+            color: #e4e4e7;
+        }
         .markdown-body h4 {
             font-size: 1.2em;
             font-weight: 600;
@@ -83,10 +107,16 @@
             margin-bottom: 0.5rem;
             color: #27272a;
         }
+        .dark .markdown-body h4 {
+            color: #e4e4e7;
+        }
         .markdown-body p {
             margin-bottom: 1rem;
             line-height: 1.625;
             color: #3f3f46;
+        }
+        .dark .markdown-body p {
+            color: #d4d4d8;
         }
         .markdown-body ul {
             list-style-type: disc !important;
@@ -105,6 +135,9 @@
             color: #3f3f46 !important;
             display: list-item !important;
         }
+        .dark .markdown-body li {
+            color: #d4d4d8 !important;
+        }
         .markdown-body blockquote {
             border-left: 4px solid #e4e4e7;
             padding-left: 1rem;
@@ -112,10 +145,17 @@
             font-style: italic;
             margin: 1rem 0;
         }
+        .dark .markdown-body blockquote {
+            border-left-color: #3f3f46;
+            color: #a1a1aa;
+        }
         .markdown-body hr {
             border: 0;
             border-top: 1px solid #e4e4e7;
             margin: 1.5rem 0;
+        }
+        .dark .markdown-body hr {
+            border-top-color: #27272a;
         }
         .markdown-body pre {
             background-color: #272822 !important; /* Monokai dark background */
@@ -152,12 +192,48 @@
             font-family: monospace !important;
             font-size: 0.85em !important; /* Scales automatically */
         }
+        .dark .markdown-body :not(pre) > code {
+            background-color: #27272a !important;
+            border-color: #3f3f46 !important;
+            color: #f4f4f5 !important;
+        }
+        .markdown-body strong {
+            font-weight: 700;
+            color: #09090b;
+        }
+        .dark .markdown-body strong {
+            color: #f4f4f5;
+        }
+        .markdown-body table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1.5rem 0;
+        }
+        .markdown-body th, .markdown-body td {
+            border: 1px solid #e4e4e7;
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+        .dark .markdown-body th, .dark .markdown-body td {
+            border-color: #27272a;
+        }
+        .markdown-body th {
+            background-color: #f4f4f5;
+            font-weight: 600;
+        }
+        .dark .markdown-body th {
+            background-color: #18181b;
+        }
         .markdown-body mark.markdown-highlight {
             background-color: #fef08a !important; /* Soft yellow highlight */
             color: #1c1917 !important;
             padding: 0.1rem 0.25rem !important;
             border-radius: 0.125rem !important;
             font-weight: 500 !important;
+        }
+        .dark .markdown-body mark.markdown-highlight {
+            background-color: #ca8a04 !important;
+            color: #fef9c3 !important;
         }
         mark.note-highlight-only {
             background-color: #fef08a !important;
@@ -168,15 +244,28 @@
             font-size: inherit !important;
             font-weight: inherit !important;
         }
+        .dark mark.note-highlight-only {
+            background-color: #eab308 !important;
+            color: #1c1917 !important;
+        }
         mark.note-highlight-only:hover {
             background-color: #fde047 !important;
+        }
+        .dark mark.note-highlight-only:hover {
+            background-color: #facc15 !important;
         }
         mark.note-highlight-only mark.note-highlight-only {
             background-color: #fcd34d !important; /* Slightly darker yellow for nested highlights */
             outline: 1px dashed rgba(0, 0, 0, 0.15);
         }
+        .dark mark.note-highlight-only mark.note-highlight-only {
+            background-color: #ca8a04 !important;
+        }
         mark.note-highlight-only mark.note-highlight-only:hover {
             background-color: #fbbf24 !important;
+        }
+        .dark mark.note-highlight-only mark.note-highlight-only:hover {
+            background-color: #b45309 !important;
         }
         #course-grid {
             display: grid !important;
@@ -215,7 +304,7 @@
         }
     </style>
 </head>
-<body class="bg-zinc-50 text-zinc-900 min-h-screen flex flex-row antialiased overflow-hidden h-screen w-screen">
+<body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 min-h-screen flex flex-row antialiased overflow-hidden h-screen w-screen">
 
     <!-- MAIN VIEW CONTAINER -->
     <div class="flex-1 flex flex-col overflow-hidden h-full min-w-0">
@@ -226,28 +315,28 @@
         <div class="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-6 shrink-0">
             <div>
                 <div class="flex items-center gap-2 mb-4">
-                    <div class="bg-zinc-900 text-white rounded p-1.5 flex items-center justify-center">
+                    <div class="bg-zinc-900 dark:bg-zinc-800 text-white rounded p-1.5 flex items-center justify-center">
                         <i data-lucide="layers" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <h1 class="font-extrabold text-sm tracking-tight">Self-Paced Learning Portal</h1>
-                        <p class="text-[10px] text-zinc-500">Self-Paced Curriculum</p>
+                        <h1 class="font-extrabold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">Self-Paced Learning Portal</h1>
+                        <p class="text-[10px] text-zinc-500 dark:text-zinc-400">Self-Paced Curriculum</p>
                     </div>
                 </div>
                 <div>
-                    <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Available Tracks</h2>
-                    <p class="text-xs text-zinc-500 mt-1">Select an engineering domain specialization to begin your lessons.</p>
+                    <h2 class="text-xl font-extrabold text-zinc-900 dark:text-zinc-50 tracking-tight">Available Tracks</h2>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Select an engineering domain specialization to begin your lessons.</p>
                 </div>
             </div>
 
             <!-- Minimal 7-day Pomodoro Stats (Matches Course Card Styling and Size) -->
-            <div id="pomodoro-stats-panel" class="bg-white border border-zinc-200 rounded-xl p-3 shadow-sm min-w-[280px] md:max-w-xs w-full md:w-auto shrink-0 h-[90px] flex flex-col justify-between hover:shadow transition-all duration-200">
+            <div id="pomodoro-stats-panel" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 shadow-sm min-w-[280px] md:max-w-xs w-full md:w-auto shrink-0 h-[90px] flex flex-col justify-between hover:shadow transition-all duration-200">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1.5">
-                        <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-zinc-600"></i>
-                        <span class="text-[9px] font-bold text-zinc-800 uppercase tracking-wider">Weekly Focus (mins)</span>
+                        <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400"></i>
+                        <span class="text-[9px] font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">Weekly Focus (mins)</span>
                     </div>
-                    <span id="weekly-total" class="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">0m total</span>
+                    <span id="weekly-total" class="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/40">0m total</span>
                 </div>
                 <div id="stats-bars-container" class="flex items-end justify-between h-[38px] gap-1.5 pt-1">
                     <!-- Loaded dynamically -->
@@ -261,21 +350,28 @@
             <div class="relative flex-1 max-w-sm">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
                 <input type="text" id="course-filter-search" placeholder="Filter courses or categories..."
-                       class="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition"
+                       class="w-full pl-9 pr-4 py-1.5 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
                        oninput="filterAndSortCourses()">
             </div>
 
             <!-- Sort and Notes Actions -->
             <div class="flex items-center gap-3 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Sort by</span>
+                    <span class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Sort by</span>
                     <select id="course-sort-select" onchange="filterAndSortCourses()"
-                            class="bg-white border border-zinc-200 rounded-md px-2 py-1 text-xs text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
+                            class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-2 py-1 text-xs text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 transition cursor-pointer">
                         <option value="name">Name (A-Z)</option>
                         <option value="progress">Progress (High to Low)</option>
                     </select>
                 </div>
-                <button onclick="enterNotes()" class="bg-zinc-950 text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition flex items-center gap-1.5 shrink-0 shadow-sm">
+                
+                <!-- Dark Mode Toggle Button -->
+                <button onclick="toggleTheme()" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-md p-1.5 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition shadow-sm h-8 w-8" title="Toggle Light/Dark Theme">
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                    <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+                </button>
+
+                <button onclick="enterNotes()" class="bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition flex items-center gap-1.5 shrink-0 shadow-sm h-8">
                     <i data-lucide="sticky-note" class="w-3.5 h-3.5"></i>
                     <span>Notes</span>
                 </button>
@@ -311,39 +407,39 @@
     <div id="workspace-screen" class="hidden flex-1 overflow-hidden h-full w-full flex">
         
         <!-- LEFT SIDEBAR -->
-        <aside class="w-80 h-full border-r border-zinc-200 bg-white flex flex-col justify-between shrink-0 overflow-hidden">
+        <aside class="w-80 h-full border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col justify-between shrink-0 overflow-hidden">
             <div class="p-5 flex flex-col gap-4 overflow-hidden flex-1">
                 
                 <!-- Back action and Pomodoro Widget -->
                 <div class="flex items-center justify-between shrink-0 gap-2">
-                    <button onclick="backToCourses()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-900 transition font-bold uppercase tracking-wider">
+                    <button onclick="backToCourses()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition font-bold uppercase tracking-wider">
                         <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Tracks
                     </button>
                     
-                    <div id="pomodoro-widget" class="flex items-center gap-1 bg-zinc-100 border border-zinc-200 px-2 py-1 rounded-md text-[10px] font-bold text-zinc-700 shrink-0">
-                        <i data-lucide="timer" class="w-3.5 h-3.5 text-zinc-500" id="pomodoro-icon"></i>
+                    <div id="pomodoro-widget" class="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-2 py-1 rounded-md text-[10px] font-bold text-zinc-700 dark:text-zinc-300 shrink-0">
+                        <i data-lucide="timer" class="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" id="pomodoro-icon"></i>
                         <span id="pomodoro-time" class="font-mono">25:00</span>
-                        <button id="pomodoro-btn" onclick="togglePomodoro()" class="text-zinc-900 hover:text-zinc-600 transition-colors uppercase text-[9px] tracking-wider pl-1.5 border-l border-zinc-200 focus:outline-none">
+                        <button id="pomodoro-btn" onclick="togglePomodoro()" class="text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-400 transition-colors uppercase text-[9px] tracking-wider pl-1.5 border-l border-zinc-200 dark:border-zinc-700 focus:outline-none">
                             Start
                         </button>
                     </div>
                 </div>
 
                 <!-- Course Title Header -->
-                <div class="shrink-0 border-b border-zinc-200 pb-3">
-                    <h2 class="text-xs font-bold text-zinc-900 uppercase tracking-tight" id="sidebar-course-title">Active Track</h2>
+                <div class="shrink-0 border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                    <h2 class="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-tight" id="sidebar-course-title">Active Track</h2>
                 </div>
 
                 <!-- Course Progress -->
-                <div class="bg-zinc-50 rounded-lg p-4 border border-zinc-200 shrink-0">
+                <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 border border-zinc-200 dark:border-zinc-800 shrink-0">
                     <div class="flex justify-between items-center mb-1.5">
-                        <span class="text-[10px] font-semibold text-zinc-600">Track Completion</span>
-                        <span id="progress-percentage" class="text-xs font-bold text-zinc-900">0%</span>
+                        <span class="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400">Track Completion</span>
+                        <span id="progress-percentage" class="text-xs font-bold text-zinc-900 dark:text-zinc-100">0%</span>
                     </div>
-                    <div class="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
-                        <div id="progress-bar-fill" class="bg-zinc-900 h-full w-0 transition-all duration-500"></div>
+                    <div class="w-full bg-zinc-200 dark:bg-zinc-700 h-1.5 rounded-full overflow-hidden">
+                        <div id="progress-bar-fill" class="bg-zinc-900 dark:bg-zinc-100 h-full w-0 transition-all duration-500"></div>
                     </div>
-                    <div class="flex justify-between items-center mt-3 text-[10px] text-zinc-500">
+                    <div class="flex justify-between items-center mt-3 text-[10px] text-zinc-500 dark:text-zinc-400">
                         <span id="progress-count">0 of 0 Passed</span>
                     </div>
                 </div>
@@ -352,7 +448,7 @@
                 <div class="relative shrink-0">
                     <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
                     <input type="text" id="global-search" placeholder="Search lessons..."
-                           class="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition"
+                           class="w-full pl-9 pr-4 py-1.5 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
                            onkeyup="handleSearch(event)">
                 </div>
 
@@ -369,7 +465,7 @@
         </aside>
 
         <!-- MAIN LAYOUT WRAPPER (Center View) -->
-        <main class="flex-1 h-full flex overflow-hidden bg-white">
+        <main class="flex-1 h-full flex overflow-hidden bg-white dark:bg-zinc-950">
 
             <!-- MAIN CONTENT CONTAINER -->
             <div class="flex-1 h-full flex flex-col overflow-hidden p-6 md:p-8 relative" id="content-viewport">
@@ -378,30 +474,36 @@
                 <div id="module-container" class="hidden flex-1 flex flex-col overflow-hidden max-w-4xl mx-auto w-full">
                     
                     <!-- Module Title Header -->
-                    <div class="border-b border-zinc-200 pb-3 mb-3 shrink-0 flex justify-between items-end">
+                    <div class="border-b border-zinc-200 dark:border-zinc-800 pb-3 mb-3 shrink-0 flex justify-between items-end">
                         <div>
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="text-[9px] uppercase bg-zinc-100 text-zinc-800 px-2 rounded-full font-semibold" id="lbl-module-tag">Module</span>
-                                <span id="lbl-read-status" class="hidden items-center gap-1 text-[10px] text-emerald-600 font-medium">
+                                <span class="text-[9px] uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-2 rounded-full font-semibold" id="lbl-module-tag">Module</span>
+                                <span id="lbl-read-status" class="hidden items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
                                     <i data-lucide="check" class="w-3.5 h-3.5"></i> All Passed
                                 </span>
                             </div>
-                            <h2 class="text-lg font-bold tracking-tight text-zinc-900" id="module-title">Module Title</h2>
+                            <h2 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50" id="module-title">Module Title</h2>
                         </div>
                         <!-- Font Size & Notes Adjusters -->
-                        <div class="flex items-center gap-1 bg-zinc-100 p-1 rounded-md border border-zinc-200 shrink-0 mb-0.5">
-                            <span class="text-[9px] font-bold text-zinc-500 uppercase px-1.5 select-none font-sans">Font</span>
-                            <button onclick="adjustFontSize(-1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Decrease font size">A-</button>
-                            <button onclick="adjustFontSize(1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Increase font size">A+</button>
-                            <span class="text-zinc-300 px-0.5 select-none">|</span>
-                            <button id="btn-toggle-notes-sidebar" onclick="enterNotes()" class="px-2 h-6 rounded flex items-center gap-1 text-[11px] font-bold text-zinc-700 hover:bg-white hover:shadow-sm transition focus:outline-none" title="Go to Notes">
+                        <div class="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-md border border-zinc-200 dark:border-zinc-800 shrink-0 mb-0.5">
+                            <span class="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 px-1.5 select-none font-sans">Font</span>
+                            <button onclick="adjustFontSize(-1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm transition focus:outline-none" title="Decrease font size">A-</button>
+                            <button onclick="adjustFontSize(1)" class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm transition focus:outline-none" title="Increase font size">A+</button>
+                            <span class="text-zinc-300 dark:text-zinc-700 px-0.5 select-none">|</span>
+                            <!-- Dark Mode Toggle inside workspace -->
+                            <button onclick="toggleTheme()" class="w-6 h-6 rounded flex items-center justify-center hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm transition focus:outline-none" title="Toggle Light/Dark Theme">
+                                <i data-lucide="sun" class="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300 hidden dark:block"></i>
+                                <i data-lucide="moon" class="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300 block dark:hidden"></i>
+                            </button>
+                            <span class="text-zinc-300 dark:text-zinc-700 px-0.5 select-none">|</span>
+                            <button id="btn-toggle-notes-sidebar" onclick="enterNotes()" class="px-2 h-6 rounded flex items-center gap-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm transition focus:outline-none" title="Go to Notes">
                                 <i data-lucide="edit-3" class="w-3 h-3"></i> <span>Notes</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Tabs Component -->
-                    <div class="flex border-b border-zinc-200 mb-4 gap-1 shrink-0 overflow-x-auto" role="tablist">
+                    <div class="flex border-b border-zinc-200 dark:border-zinc-800 mb-4 gap-1 shrink-0 overflow-x-auto" role="tablist">
                         <button onclick="switchTab('theory')" id="tab-theory" class="border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap">1. Core Concepts</button>
                         <button onclick="switchTab('commands')" id="tab-commands" class="border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap">2. Command & Syntax</button>
                         <button onclick="switchTab('examples')" id="tab-examples" class="border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap">3. Real-World Examples</button>
@@ -410,22 +512,22 @@
                     </div>
 
                     <!-- Dynamic scrolling content container -->
-                    <div class="flex-1 overflow-y-auto pr-2 text-zinc-700 leading-relaxed text-xs mb-4 markdown-body" id="tab-pane-content">
+                    <div class="flex-1 overflow-y-auto pr-2 text-zinc-700 dark:text-zinc-300 leading-relaxed text-xs mb-4 markdown-body" id="tab-pane-content">
                         <!-- Markdown content output -->
                     </div>
 
                     <!-- Bottom Action Bar -->
-                    <div class="mt-auto border-t border-zinc-200 pt-4 flex items-center justify-between bg-white py-2 shrink-0">
+                    <div class="mt-auto border-t border-zinc-200 dark:border-zinc-800 pt-4 flex items-center justify-between bg-white dark:bg-zinc-950 py-2 shrink-0">
                         <button onclick="toggleCompleted()" id="btn-toggle-complete" 
-                                class="inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors border border-zinc-200 bg-white hover:bg-zinc-50 h-9 px-3.5 py-1.5 text-zinc-800">
+                                class="inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 h-9 px-3.5 py-1.5 text-zinc-800 dark:text-zinc-200">
                             <i data-lucide="circle-dot" class="w-4 h-4"></i> Mark Section as Passed
                         </button>
                         
                         <div class="flex gap-1.5">
-                            <button onclick="navigateModule(-1)" id="btn-prev-mod" class="px-3 py-1.5 border border-zinc-200 rounded-md text-[11px] hover:bg-zinc-50 text-zinc-700 font-semibold disabled:opacity-50">
+                            <button onclick="navigateModule(-1)" id="btn-prev-mod" class="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-md text-[11px] hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold disabled:opacity-50 disabled:dark:opacity-30">
                                 Previous
                             </button>
-                            <button onclick="navigateModule(1)" id="btn-next-mod" class="px-3 py-1.5 bg-zinc-950 text-white rounded-md text-[11px] hover:bg-zinc-800 font-semibold">
+                            <button onclick="navigateModule(1)" id="btn-next-mod" class="px-3 py-1.5 bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md text-[11px] hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold">
                                 Next
                             </button>
                         </div>
@@ -434,9 +536,9 @@
 
                 <!-- Global Search Results View -->
                 <div id="search-container" class="hidden flex-1 flex flex-col overflow-hidden max-w-4xl mx-auto w-full">
-                    <div class="border-b border-zinc-200 pb-3 mb-4 shrink-0">
-                        <h2 class="text-lg font-bold tracking-tight text-zinc-900">Search Results</h2>
-                        <p class="text-xs text-zinc-500 mt-1" id="search-count-label">0 matches identified</p>
+                    <div class="border-b border-zinc-200 dark:border-zinc-800 pb-3 mb-4 shrink-0">
+                        <h2 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Search Results</h2>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1" id="search-count-label">0 matches identified</p>
                     </div>
                     <div id="search-results-list" class="flex-1 overflow-y-auto pr-2 space-y-3">
                         <!-- Search matches loaded here -->
@@ -451,15 +553,15 @@
     <div id="notes-screen" class="hidden flex-1 overflow-hidden h-full w-full flex flex-col max-w-5xl mx-auto">
         <div class="flex-1 overflow-y-auto w-full p-6 md:p-8 flex flex-col">
             <!-- Header section -->
-            <div class="flex items-center justify-between gap-4 border-b border-zinc-200 pb-4 mb-4 shrink-0">
+            <div class="flex items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-4 shrink-0">
                 <div>
-                    <button onclick="backFromNotes()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-900 transition font-bold uppercase tracking-wider mb-2">
+                    <button onclick="backFromNotes()" class="flex items-center gap-1.5 text-[10px] text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition font-bold uppercase tracking-wider mb-2">
                         <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back
                     </button>
-                    <h2 class="text-xl font-extrabold text-zinc-900 tracking-tight">Study Notes</h2>
-                    <p class="text-xs text-zinc-500 mt-1">Review, search, and manage all your notes and highlighted content across all tracks.</p>
+                    <h2 class="text-xl font-extrabold text-zinc-900 dark:text-zinc-50 tracking-tight">Study Notes</h2>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Review, search, and manage all your notes and highlighted content across all tracks.</p>
                 </div>
-                <button onclick="exportNotesMarkdown()" class="bg-zinc-950 text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 transition flex items-center gap-1.5 shrink-0 shadow-sm">
+                <button onclick="exportNotesMarkdown()" class="bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition flex items-center gap-1.5 shrink-0 shadow-sm">
                     <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Notes (MD)
                 </button>
             </div>
@@ -470,15 +572,15 @@
                 <div class="relative flex-1 max-w-sm">
                     <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
                     <input type="text" id="notes-filter-search" placeholder="Search across all notes..."
-                           class="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition"
+                           class="w-full pl-9 pr-4 py-1.5 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
                            oninput="renderNotesList()">
                 </div>
 
                 <!-- Course select dropdown filter -->
                 <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Course Filter</span>
+                    <span class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Course Filter</span>
                     <select id="notes-course-filter" onchange="renderNotesList()"
-                            class="bg-white border border-zinc-200 rounded-md px-2 py-1 text-xs text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-950 transition cursor-pointer">
+                            class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-2 py-1 text-xs text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 transition cursor-pointer">
                         <option value="all">All Courses</option>
                     </select>
                 </div>
@@ -646,8 +748,8 @@
             
             if (coursesToRender.length === 0) {
                 grid.innerHTML = `
-                    <div class="col-span-full p-8 text-center border border-dashed rounded-lg border-zinc-200">
-                        <p class="text-xs text-zinc-500">No matching courses found.</p>
+                    <div class="col-span-full p-8 text-center border border-dashed rounded-lg border-zinc-200 dark:border-zinc-800">
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">No matching courses found.</p>
                     </div>
                 `;
                 return;
@@ -655,11 +757,11 @@
 
             coursesToRender.forEach(c => {
                 const card = document.createElement("div");
-                card.className = "bg-white border border-zinc-200 hover:border-zinc-400 rounded-xl p-3 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between hover:shadow w-full h-[140px]";
+                card.className = "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-700 rounded-xl p-3 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between hover:shadow w-full h-[140px]";
                 card.onclick = () => enterCourse(c.id);
 
                 const categoryTag = isSearching && c.category_names && c.category_names.length > 0
-                    ? `<span class="text-[8px] bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded font-semibold border border-zinc-200/50 mr-1.5 shrink-0 align-middle inline-block">${escapeHTML(c.category_names.join(" / "))}</span>` 
+                    ? `<span class="text-[8px] bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded font-semibold border border-zinc-200/50 dark:border-zinc-700 mr-1.5 shrink-0 align-middle inline-block">${escapeHTML(c.category_names.join(" / "))}</span>` 
                     : "";
 
                 card.innerHTML = `
@@ -667,22 +769,22 @@
                         <div class="flex items-center justify-between gap-2 mb-2">
                             <div class="flex items-center min-w-0">
                                 ${categoryTag}
-                                <h3 class="font-bold text-xs text-zinc-950 truncate">${escapeHTML(c.title)}</h3>
+                                <h3 class="font-bold text-xs text-zinc-950 dark:text-zinc-100 truncate">${escapeHTML(c.title)}</h3>
                             </div>
-                            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider shrink-0 bg-zinc-50 border border-zinc-200 px-1.5 py-0.5 rounded-full">${c.total_modules} Modules</span>
+                            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider shrink-0 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded-full">${c.total_modules} Modules</span>
                         </div>
                     </div>
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <span class="text-[9px] font-semibold text-zinc-500">Progress</span>
-                            <span class="text-xs font-bold text-zinc-900">${c.percentage}%</span>
+                            <span class="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400">Progress</span>
+                            <span class="text-xs font-bold text-zinc-900 dark:text-zinc-100">${c.percentage}%</span>
                         </div>
-                        <div class="w-full bg-zinc-100 h-1 rounded-full overflow-hidden border border-zinc-200/40">
-                            <div class="bg-zinc-900 h-full transition-all duration-300" style="width: ${c.percentage}%"></div>
+                        <div class="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full overflow-hidden border border-zinc-200/40 dark:border-zinc-700/50">
+                            <div class="bg-zinc-900 dark:bg-zinc-100 h-full transition-all duration-300" style="width: ${c.percentage}%"></div>
                         </div>
-                        <div class="mt-2 flex items-center justify-between text-zinc-500 text-[9px]">
+                        <div class="mt-2 flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[9px]">
                             <span>${c.completed_sections} of ${c.total_sections} Passed</span>
-                            <span class="font-bold text-zinc-900 inline-flex items-center gap-1 hover:underline">
+                            <span class="font-bold text-zinc-900 dark:text-zinc-100 inline-flex items-center gap-1 hover:underline">
                                 Open <i data-lucide="arrow-right" class="w-3 h-3"></i>
                             </span>
                         </div>
@@ -700,7 +802,7 @@
                 nav.classList.remove("hidden");
                 
                 let breadcrumbsHTML = `
-                    <button onclick="clearCategoryPath()" class="hover:text-zinc-950 transition font-bold uppercase tracking-wider">
+                    <button onclick="clearCategoryPath()" class="hover:text-zinc-950 dark:hover:text-zinc-100 transition font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                         Root
                     </button>
                 `;
@@ -715,8 +817,8 @@
                     const pathStr = JSON.stringify(pathAccumulator);
                     
                     breadcrumbsHTML += `
-                        <span class="text-zinc-350 mx-1.5">/</span>
-                        <button onclick='goToCategoryPath(${pathStr})' class="hover:text-zinc-950 transition font-bold ${i === P.length - 1 ? 'text-zinc-900 font-extrabold' : ''}">
+                        <span class="text-zinc-300 dark:text-zinc-600 mx-1.5">/</span>
+                        <button onclick='goToCategoryPath(${pathStr})' class="hover:text-zinc-950 dark:hover:text-zinc-100 transition font-bold ${i === P.length - 1 ? 'text-zinc-900 dark:text-zinc-100 font-extrabold' : 'text-zinc-500 dark:text-zinc-400'}">
                             ${escapeHTML(name)}
                         </button>
                     `;
@@ -726,16 +828,16 @@
                 const backPathStr = JSON.stringify(backPath);
                 
                 nav.innerHTML = `
-                    <div class="flex items-center gap-1.5 text-xs text-zinc-500 mb-2">
-                        <button onclick='goToCategoryPath(${backPathStr})' class="inline-flex items-center gap-1 hover:text-zinc-950 transition">
+                    <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                        <button onclick='goToCategoryPath(${backPathStr})' class="inline-flex items-center gap-1 hover:text-zinc-950 dark:hover:text-zinc-100 transition">
                             <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Up one level
                         </button>
                     </div>
                     <div class="flex items-center gap-2 mt-1">
-                        <div class="bg-zinc-100 text-zinc-800 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase border border-zinc-200">
+                        <div class="bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase border border-zinc-200 dark:border-zinc-700">
                             Folders
                         </div>
-                        <div class="flex items-center text-xs text-zinc-500 font-semibold select-none">
+                        <div class="flex items-center text-xs text-zinc-500 dark:text-zinc-400 font-semibold select-none">
                             ${breadcrumbsHTML}
                         </div>
                     </div>
@@ -812,8 +914,8 @@
             
             if (subfolders.length === 0 && courses.length === 0) {
                 grid.innerHTML = `
-                    <div class="col-span-full p-8 text-center border border-dashed rounded-lg border-zinc-200">
-                        <p class="text-xs text-zinc-500">This folder is empty.</p>
+                    <div class="col-span-full p-8 text-center border border-dashed rounded-lg border-zinc-200 dark:border-zinc-800">
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">This folder is empty.</p>
                     </div>
                 `;
                 return;
@@ -821,7 +923,7 @@
 
             subfolders.forEach(cat => {
                 const card = document.createElement("div");
-                card.className = "bg-white border border-zinc-200 hover:border-zinc-400 rounded-xl p-3 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between hover:shadow w-full h-[140px]";
+                card.className = "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-700 rounded-xl p-3 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between hover:shadow w-full h-[140px]";
                 
                 const nextPath = [...state.currentCategoryPath, cat.id];
                 const nextPathStr = JSON.stringify(nextPath);
@@ -834,25 +936,25 @@
                     <div>
                         <div class="flex items-center justify-between gap-2 mb-2">
                             <div class="flex items-center min-w-0 gap-1.5">
-                                <span class="bg-zinc-100 text-zinc-700 rounded p-1 flex items-center justify-center shrink-0 border border-zinc-200/50">
+                                <span class="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded p-1 flex items-center justify-center shrink-0 border border-zinc-200/50 dark:border-zinc-700">
                                     <i data-lucide="folder" class="w-3.5 h-3.5"></i>
                                 </span>
-                                <h3 class="font-bold text-xs text-zinc-950 truncate">${escapeHTML(cat.name)}</h3>
+                                <h3 class="font-bold text-xs text-zinc-950 dark:text-zinc-100 truncate">${escapeHTML(cat.name)}</h3>
                             </div>
-                            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider shrink-0 bg-zinc-50 border border-zinc-200 px-1.5 py-0.5 rounded-full">${tracksText}</span>
+                            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider shrink-0 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 px-1.5 py-0.5 rounded-full">${tracksText}</span>
                         </div>
                     </div>
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <span class="text-[9px] font-semibold text-zinc-500">Progress</span>
-                            <span class="text-xs font-bold text-zinc-900">${avgPct}%</span>
+                            <span class="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400">Progress</span>
+                            <span class="text-xs font-bold text-zinc-900 dark:text-zinc-200">${avgPct}%</span>
                         </div>
-                        <div class="w-full bg-zinc-100 h-1 rounded-full overflow-hidden border border-zinc-200/40">
-                            <div class="bg-zinc-900 h-full transition-all duration-300" style="width: ${avgPct}%"></div>
+                        <div class="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full overflow-hidden border border-zinc-200/40 dark:border-zinc-700/50">
+                            <div class="bg-zinc-900 dark:bg-zinc-100 h-full transition-all duration-300" style="width: ${avgPct}%"></div>
                         </div>
-                        <div class="mt-2 flex items-center justify-between text-zinc-500 text-[9px]">
+                        <div class="mt-2 flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[9px]">
                             <span>&nbsp;</span>
-                            <span class="font-bold text-zinc-900 inline-flex items-center gap-1 hover:underline">
+                            <span class="font-bold text-zinc-900 dark:text-zinc-100 inline-flex items-center gap-1 hover:underline">
                                 Open <i data-lucide="arrow-right" class="w-3 h-3"></i>
                             </span>
                         </div>
@@ -863,27 +965,27 @@
 
             courses.forEach(c => {
                 const card = document.createElement("div");
-                card.className = "bg-white border border-zinc-200 hover:border-zinc-400 rounded-xl p-3 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between hover:shadow w-full h-[140px]";
+                card.className = "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-700 rounded-xl p-3 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between hover:shadow w-full h-[140px]";
                 card.onclick = () => enterCourse(c.id);
 
                 card.innerHTML = `
                     <div>
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <h3 class="font-bold text-xs text-zinc-950 truncate">${escapeHTML(c.title)}</h3>
-                            <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-wider shrink-0 bg-zinc-50 border border-zinc-200 px-1.5 py-0.5 rounded-full">${c.total_modules} Modules</span>
+                            <h3 class="font-bold text-xs text-zinc-950 dark:text-zinc-100 truncate">${escapeHTML(c.title)}</h3>
+                            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider shrink-0 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 px-1.5 py-0.5 rounded-full">${c.total_modules} Modules</span>
                         </div>
                     </div>
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <span class="text-[9px] font-semibold text-zinc-500">Progress</span>
-                            <span class="text-xs font-bold text-zinc-900">${c.percentage}%</span>
+                            <span class="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400">Progress</span>
+                            <span class="text-xs font-bold text-zinc-900 dark:text-zinc-200">${c.percentage}%</span>
                         </div>
-                        <div class="w-full bg-zinc-100 h-1 rounded-full overflow-hidden border border-zinc-200/40">
-                            <div class="bg-zinc-900 h-full transition-all duration-300" style="width: ${c.percentage}%"></div>
+                        <div class="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full overflow-hidden border border-zinc-200/40 dark:border-zinc-700/50">
+                            <div class="bg-zinc-900 dark:bg-zinc-100 h-full transition-all duration-300" style="width: ${c.percentage}%"></div>
                         </div>
-                        <div class="mt-2 flex items-center justify-between text-zinc-500 text-[9px]">
+                        <div class="mt-2 flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[9px]">
                             <span>${c.completed_sections} of ${c.total_sections} Passed</span>
-                            <span class="font-bold text-zinc-900 inline-flex items-center gap-1 hover:underline">
+                            <span class="font-bold text-zinc-900 dark:text-zinc-100 inline-flex items-center gap-1 hover:underline">
                                 Open <i data-lucide="arrow-right" class="w-3 h-3"></i>
                             </span>
                         </div>
@@ -1108,15 +1210,15 @@
                 const li = document.createElement("li");
                 const isActive = m.id === state.currentModuleId && state.activeView === 'module';
                 const buttonClass = isActive 
-                    ? "w-full text-left flex items-center justify-between px-3 py-1.5 text-xs rounded-md bg-zinc-100 text-zinc-900 font-semibold border border-zinc-200/50" 
-                    : "w-full text-left flex items-center justify-between px-3 py-1.5 text-xs rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors border border-transparent";
+                    ? "w-full text-left flex items-center justify-between px-3 py-1.5 text-xs rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold border border-zinc-200/50 dark:border-zinc-700/50" 
+                    : "w-full text-left flex items-center justify-between px-3 py-1.5 text-xs rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors border border-transparent";
                 
                 const completedCount = m.completed_sections ? m.completed_sections.length : 0;
                 const isAllCompleted = completedCount === 5;
                 
                 const progressIndicator = isAllCompleted 
-                    ? `<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>` 
-                    : `<span class="text-[9px] font-bold text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded shrink-0">${completedCount}/5</span>`;
+                    ? `<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0"></i>` 
+                    : `<span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded shrink-0">${completedCount}/5</span>`;
 
                 li.innerHTML = `
                     <button onclick="selectModuleFromSidebar(${m.id})" class="${buttonClass}">
@@ -1242,9 +1344,9 @@
                 const checkSuffix = isCompleted ? " ✓" : "";
 
                 if (t === tab) {
-                    btn.className = "border-zinc-900 text-zinc-900 border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap";
+                    btn.className = "border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100 border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap";
                 } else {
-                    btn.className = "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap";
+                    btn.className = "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 border-b-2 px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none whitespace-nowrap";
                 }
                 btn.textContent = `${tabNames[t]}${checkSuffix}`;
             });
@@ -1285,11 +1387,11 @@
                 const sectionName = tabFriendlyNames[tab];
                 const btn = document.getElementById("btn-toggle-complete");
                 if (isSectionCompleted) {
-                    btn.innerHTML = `<i data-lucide="check-square" class="w-4 h-4 text-emerald-600"></i> Passed ${sectionName}`;
-                    btn.className = "inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors border border-zinc-200 bg-emerald-50 text-emerald-700 h-9 px-3.5 py-1.5 hover:bg-emerald-100";
+                    btn.innerHTML = `<i data-lucide="check-square" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i> Passed ${sectionName}`;
+                    btn.className = "inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors border border-zinc-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 h-9 px-3.5 py-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40";
                 } else {
                     btn.innerHTML = `<i data-lucide="circle-dot" class="w-4 h-4"></i> Mark ${sectionName} as Passed`;
-                    btn.className = "inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors border border-zinc-200 bg-white hover:bg-zinc-50 h-9 px-3.5 py-1.5 text-zinc-800";
+                    btn.className = "inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 h-9 px-3.5 py-1.5 text-zinc-800 dark:text-zinc-200";
                 }
                 lucide.createIcons();
             }
@@ -1344,8 +1446,8 @@
 
             if (results.length === 0) {
                 container.innerHTML = `
-                    <div class="p-8 text-center border border-dashed rounded-lg border-zinc-200">
-                        <p class="text-xs text-zinc-500">No matching text records detected in curriculum.</p>
+                    <div class="p-8 text-center border border-dashed rounded-lg border-zinc-200 dark:border-zinc-850">
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">No matching text records detected in curriculum.</p>
                     </div>
                 `;
                 return;
@@ -1353,7 +1455,7 @@
 
             results.forEach(item => {
                 const div = document.createElement("div");
-                div.className = "border border-zinc-200 bg-white rounded-lg p-4 hover:border-zinc-400 transition cursor-pointer";
+                div.className = "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-lg p-4 hover:border-zinc-400 dark:hover:border-zinc-700 transition cursor-pointer";
                 
                 const targetTab = (item.matches && item.matches.length > 0) ? item.matches[0].section.toLowerCase() : 'theory';
                 div.onclick = () => {
@@ -1363,8 +1465,8 @@
                 let matchSnippets = "";
                 item.matches.forEach(m => {
                     matchSnippets += `
-                        <div class="mt-1.5 text-[11px] bg-zinc-50 p-2 rounded border border-zinc-100 font-mono text-zinc-600">
-                            <span class="font-bold text-zinc-850 text-[9px] uppercase block mb-0.5">${m.section}</span>
+                        <div class="mt-1.5 text-[11px] bg-zinc-50 dark:bg-zinc-950 p-2 rounded border border-zinc-100 dark:border-zinc-800 font-mono text-zinc-600 dark:text-zinc-400">
+                            <span class="font-bold text-zinc-700 dark:text-zinc-200 text-[9px] uppercase block mb-0.5">${m.section}</span>
                             ${escapeHTML(m.snippet)}
                         </div>
                     `;
@@ -1372,10 +1474,10 @@
 
                 div.innerHTML = `
                     <div class="flex items-center justify-between mb-1">
-                        <span class="text-[9px] text-zinc-400 uppercase font-bold tracking-wide">${escapeHTML(item.course_title)}</span>
-                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-zinc-400"></i>
+                        <span class="text-[9px] text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wide">${escapeHTML(item.course_title)}</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>
                     </div>
-                    <h4 class="text-xs font-semibold text-zinc-900">${escapeHTML(item.title)}</h4>
+                    <h4 class="text-xs font-semibold text-zinc-900 dark:text-zinc-100">${escapeHTML(item.title)}</h4>
                     ${matchSnippets}
                 `;
                 container.appendChild(div);
@@ -1419,7 +1521,7 @@
             updatePomodoroDisplay();
             
             document.getElementById("pomodoro-btn").textContent = "Stop";
-            document.getElementById("pomodoro-btn").className = "text-rose-600 hover:text-rose-800 transition-colors uppercase text-[9px] tracking-wider pl-1.5 border-l border-zinc-200 focus:outline-none font-extrabold";
+            document.getElementById("pomodoro-btn").className = "text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 transition-colors uppercase text-[9px] tracking-wider pl-1.5 border-l border-zinc-200 dark:border-zinc-700 focus:outline-none font-extrabold";
             document.getElementById("pomodoro-icon").classList.add("text-rose-500", "animate-pulse");
             
             pomodoroInterval = setInterval(() => {
@@ -1439,7 +1541,7 @@
             
             document.getElementById("pomodoro-time").textContent = "25:00";
             document.getElementById("pomodoro-btn").textContent = "Start";
-            document.getElementById("pomodoro-btn").className = "text-zinc-900 hover:text-zinc-600 transition-colors uppercase text-[9px] tracking-wider pl-1.5 border-l border-zinc-200 focus:outline-none";
+            document.getElementById("pomodoro-btn").className = "text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-400 transition-colors uppercase text-[9px] tracking-wider pl-1.5 border-l border-zinc-200 dark:border-zinc-700 focus:outline-none";
             document.getElementById("pomodoro-icon").className = "w-3.5 h-3.5 text-zinc-500";
             document.getElementById("pomodoro-icon").classList.remove("text-rose-500", "animate-pulse");
         }
@@ -1539,8 +1641,8 @@
                 
                 const bar = document.createElement("div");
                 bar.className = s.minutes > 0 
-                    ? "w-full bg-zinc-950 rounded-t transition-all duration-300 group-hover:bg-zinc-700" 
-                    : "w-full bg-zinc-100 border-t border-zinc-200/50 rounded-t transition-all duration-300";
+                    ? "w-full bg-zinc-950 dark:bg-zinc-100 rounded-t transition-all duration-300 group-hover:bg-zinc-700 dark:group-hover:bg-zinc-350" 
+                    : "w-full bg-zinc-100 dark:bg-zinc-800 border-t border-zinc-200/50 dark:border-zinc-700/50 rounded-t transition-all duration-300";
                 bar.style.height = `${heightPct}%`;
                 barCol.appendChild(bar);
                 
@@ -2155,14 +2257,14 @@
             return `
                 <div class="flex-1 flex flex-col justify-between min-h-0 h-full">
                     <!-- Text Area with High Vertical Space & Readability -->
-                    <div class="flex-1 text-[11px] text-zinc-700 leading-relaxed select-text font-medium text-left break-words whitespace-normal overflow-y-auto pr-1 mb-2" title="${escapeHTML(note.selected_text)}">
+                    <div class="flex-1 text-[11px] text-zinc-700 dark:text-zinc-300 leading-relaxed select-text font-medium text-left break-words whitespace-normal overflow-y-auto pr-1 mb-2" title="${escapeHTML(note.selected_text)}">
                         "${escapeHTML(cleanedText)}"
                     </div>
                     
                     <!-- Bottom Controls Footer -->
-                    <div class="flex items-center justify-between pt-2 border-t border-zinc-100 shrink-0">
+                    <div class="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
                         <button onclick="event.stopPropagation(); jumpToNoteContent('${note.course_id}', ${note.module_id}, '${note.section_id}', ${note.id})" 
-                                class="inline-flex items-center gap-1 text-[9px] font-bold text-zinc-900 hover:text-zinc-600 transition uppercase tracking-wider select-none">
+                                class="inline-flex items-center gap-1 text-[9px] font-bold text-zinc-900 dark:text-zinc-200 hover:text-zinc-600 dark:hover:text-zinc-400 transition uppercase tracking-wider select-none">
                             <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Jump to Content
                         </button>
                         
@@ -2197,8 +2299,8 @@
             
             if (filtered.length === 0) {
                 container.innerHTML = `
-                    <div class="col-span-full p-12 text-center border border-dashed rounded-lg border-zinc-200">
-                        <p class="text-xs text-zinc-500">No highlights match your filters.</p>
+                    <div class="col-span-full p-12 text-center border border-dashed rounded-lg border-zinc-200 dark:border-zinc-800">
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">No highlights match your filters.</p>
                     </div>
                 `;
                 return;
@@ -2206,7 +2308,7 @@
             
             filtered.forEach(note => {
                 const card = document.createElement("div");
-                card.className = "bg-white border border-zinc-200 rounded-xl p-3 shadow-sm hover:border-zinc-300 transition flex flex-col justify-between gap-1 w-full h-36 cursor-pointer hover:shadow-md select-none overflow-hidden";
+                card.className = "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition flex flex-col justify-between gap-1 w-full h-36 cursor-pointer hover:shadow-md select-none overflow-hidden";
                 card.onclick = (e) => {
                     if (e.target.closest('button') || e.target.closest('a') || e.target.closest('i')) return;
                     jumpToNoteContent(note.course_id, note.module_id, note.section_id, note.id);
@@ -2294,6 +2396,28 @@
             if (!text) return "";
             let processed = text.replace(/==([^=]+)==/g, '<mark>$1</mark>');
             return marked.parse(processed);
+        }
+    </script>
+    <script>
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+            if (typeof filterAndSortCourses === 'function') {
+                filterAndSortCourses();
+            }
+            if (typeof state !== 'undefined' && state.currentModuleId && state.activeView === 'module') {
+                if (typeof switchTab === 'function') {
+                    switchTab(state.currentTab, true);
+                }
+            }
+            if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
         }
     </script>
 </body>
