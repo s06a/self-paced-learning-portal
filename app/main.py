@@ -254,6 +254,9 @@ def toggle_progress(course_id: str, module_id: int, section: str = Query(...)):
 
 @app.get("/api/search")
 def search_all(q: str = Query("", min_length=1)):
+    # Dynamic reload on each request to make local developer testing instant
+    load_courses()
+    
     if not q:
         return {"results": []}
         
@@ -262,10 +265,10 @@ def search_all(q: str = Query("", min_length=1)):
     
     # Global search across all integrated tracks
     for c_id, course in COURSES.items():
-        for m in course["curriculum"]:
+        for m in course.get("curriculum", []):
             matches = []
             for field in ["theory", "commands", "examples", "exercise", "insight"]:
-                content = m[field]
+                content = m.get(field, "") or ""
                 if term in content.lower():
                     start = max(0, content.lower().find(term) - 40)
                     end = min(len(content), start + len(term) + 80)
@@ -274,13 +277,13 @@ def search_all(q: str = Query("", min_length=1)):
                         "section": field.capitalize(),
                         "snippet": snippet
                     })
-            if term in m["title"].lower() or matches:
+            if term in m.get("title", "").lower() or matches:
                 results.append({
                     "type": "curriculum",
                     "course_id": c_id,
-                    "course_title": course["title"],
-                    "id": m["id"],
-                    "title": m["title"],
+                    "course_title": course.get("title", c_id),
+                    "id": m.get("id"),
+                    "title": m.get("title", ""),
                     "matches": matches
                 })
                 

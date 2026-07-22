@@ -1206,7 +1206,8 @@
                         
                         const titleMatch = c.title.toLowerCase().includes(query);
                         const descMatch = c.description.toLowerCase().includes(query);
-                        return titleMatch || descMatch;
+                        const catMatch = c.category_names ? c.category_names.some(n => n.toLowerCase().includes(query)) : false;
+                        return titleMatch || descMatch || catMatch;
                     });
                     
                     if (sortOpt === "name") {
@@ -1214,7 +1215,7 @@
                     } else if (sortOpt === "progress") {
                         filteredCourses.sort((a, b) => b.percentage - a.percentage);
                     }
-                    renderCourseGrid(filteredCourses, false);
+                    renderCourseGrid(filteredCourses, true);
                 } else {
                     renderHierarchicalView(P, sortOpt);
                 }
@@ -1542,10 +1543,17 @@
                 // Process and attach the Copy Button to all rendered code blocks
                 addCopyButtonsToCodeBlocks();
                 
-                const hadPendingScroll = !!state.pendingScrollNoteId;
-                // Apply highlights and then scroll to any pending note
+                const hadPendingScroll = !!state.pendingScrollNoteId || !!state.pendingScrollTerm;
+                // Apply highlights and then scroll to any pending note or search term
                 applyHighlightsForCurrentSection().then(() => {
                     scrollToPendingNote();
+                    if (state.pendingScrollTerm) {
+                        const termToScroll = state.pendingScrollTerm;
+                        state.pendingScrollTerm = null;
+                        setTimeout(() => {
+                            scrollToTermInContent(termToScroll);
+                        }, 100);
+                    }
                     if (!hadPendingScroll && preserveScroll && pane) {
                         pane.scrollTop = savedScrollTop;
                     }
@@ -1587,7 +1595,7 @@
         async function handleSearch(e) {
             const val = e.target.value.trim();
             if (val.length < 2) {
-                if (val.length === 0 && state.activeView === 'search') {
+                if (state.activeView === 'search') {
                     resetToHome();
                 }
                 return;
@@ -1614,48 +1622,144 @@
 
             if (results.length === 0) {
                 container.innerHTML = `
-                    <div class="p-8 text-center border border-dashed rounded-lg border-zinc-200 dark:border-zinc-850">
+                    <div class="p-8 text-center border border-dashed rounded-lg border-zinc-200 dark:border-zinc-800">
                         <p class="text-xs text-zinc-500 dark:text-zinc-400">No matching text records detected in curriculum.</p>
                     </div>
                 `;
                 return;
             }
 
+            // Group results dynamically by course
+            const grouped = {};
             results.forEach(item => {
-                const div = document.createElement("div");
-                div.className = "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-lg p-4 hover:border-zinc-400 dark:hover:border-zinc-700 transition cursor-pointer";
+                const cId = item.course_id;
+                if (!grouped[cId]) {
+                    grouped[cId] = {
+                        course_title: item.course_title,
+                        items: []
+                    };
+                }
+                grouped[cId].items.push(item);
+            });
+
+            // Sort keys: current course first, then alphabetically by title
+            const sortedCourseIds = Object.keys(grouped).sort((a, b) => {
+                if (a === state.currentCourseId) return -1;
+                if (b === state.currentCourseId) return 1;
+                return grouped[a].course_title.localeCompare(grouped[b].course_title);
+            });
+
+            // Render structured sections on a per-course basis with collapsible styling
+            sortedCourseIds.forEach(cId => {
+                const group = grouped[cId];
+                const isCurrentCourse = (cId === state.currentCourseId);
+                const isExpanded = isCurrentCourse; // Expanded/extended by default only if it's the current course
+
+                const courseSection = document.createElement("div");
+                courseSection.className = "mb-4 border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-zinc-50/30 dark:bg-zinc-900/10";
+
+                const courseHeader = document.createElement("button");
+                courseHeader.className = "w-full flex items-center justify-between p-3 bg-zinc-100/80 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800 text-left font-bold transition focus:outline-none hover:bg-zinc-200/50 dark:hover:bg-zinc-800";
                 
-                const targetTab = (item.matches && item.matches.length > 0) ? item.matches[0].section.toLowerCase() : 'theory';
-                div.onclick = () => {
-                    clickSearchResult(item.course_id, item.id, targetTab);
+                const chevronIcon = isExpanded ? "chevron-down" : "chevron-right";
+
+                courseHeader.innerHTML = `
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded p-1 flex items-center justify-center shrink-0 border border-zinc-300/50 dark:border-zinc-700">
+                            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                        </span>
+                        <span class="text-xs font-extrabold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider truncate">${escapeHTML(group.course_title)}</span>
+                        ${isCurrentCourse ? `<span class="ml-1.5 text-[8px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 px-1.5 py-0.5 rounded font-extrabold uppercase shrink-0">Active Track</span>` : ''}
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0 ml-2">
+                        <span class="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-200/50 dark:bg-zinc-800 border border-zinc-300/40 dark:border-zinc-700 px-1.5 py-0.5 rounded-full">${group.items.length} matches</span>
+                        <i data-lucide="${chevronIcon}" class="w-4 h-4 text-zinc-500 dark:text-zinc-400 toggle-chevron"></i>
+                    </div>
+                `;
+
+                const itemsGrid = document.createElement("div");
+                itemsGrid.className = isExpanded ? "p-3 space-y-3" : "p-3 space-y-3 hidden";
+
+                courseHeader.onclick = () => {
+                    const isHidden = itemsGrid.classList.contains("hidden");
+                    if (isHidden) {
+                        itemsGrid.classList.remove("hidden");
+                        const icon = courseHeader.querySelector(".toggle-chevron");
+                        if (icon) {
+                            icon.setAttribute("data-lucide", "chevron-down");
+                            lucide.createIcons();
+                        }
+                    } else {
+                        itemsGrid.classList.add("hidden");
+                        const icon = courseHeader.querySelector(".toggle-chevron");
+                        if (icon) {
+                            icon.setAttribute("data-lucide", "chevron-right");
+                            lucide.createIcons();
+                        }
+                    }
                 };
 
-                let matchSnippets = "";
-                item.matches.forEach(m => {
-                    matchSnippets += `
-                        <div class="mt-1.5 text-[11px] bg-zinc-50 dark:bg-zinc-950 p-2 rounded border border-zinc-100 dark:border-zinc-800 font-mono text-zinc-600 dark:text-zinc-400">
-                            <span class="font-bold text-zinc-700 dark:text-zinc-200 text-[9px] uppercase block mb-0.5">${m.section}</span>
-                            ${escapeHTML(m.snippet)}
-                        </div>
+                courseSection.appendChild(courseHeader);
+
+                group.items.forEach(item => {
+                    const div = document.createElement("div");
+                    div.className = "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-lg p-4 hover:border-zinc-400 dark:hover:border-zinc-700 transition cursor-pointer";
+                    
+                    const targetTab = (item.matches && item.matches.length > 0) ? item.matches[0].section.toLowerCase() : 'theory';
+                    div.onclick = () => {
+                        clickSearchResult(item.course_id, item.id, targetTab, query);
+                    };
+
+                    const header = document.createElement("div");
+                    header.className = "flex items-center justify-between mb-1";
+                    header.innerHTML = `
+                        <span class="text-[9px] text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wide">Module ${item.id}</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>
                     `;
+                    div.appendChild(header);
+
+                    const title = document.createElement("h4");
+                    title.className = "text-xs font-semibold text-zinc-900 dark:text-zinc-100";
+                    title.textContent = item.title;
+                    div.appendChild(title);
+
+                    item.matches.forEach(m => {
+                        const snippetDiv = document.createElement("div");
+                        snippetDiv.className = "search-match-snippet mt-1.5 text-[11px] bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800/80 font-mono text-zinc-600 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-700 transition";
+                        
+                        snippetDiv.innerHTML = `
+                            <span class="font-bold text-zinc-700 dark:text-zinc-200 text-[9px] uppercase block mb-0.5">${escapeHTML(m.section)}</span>
+                            ${escapeHTML(m.snippet)}
+                        `;
+                        
+                        snippetDiv.onclick = (e) => {
+                            e.stopPropagation();
+                            clickSearchResult(item.course_id, item.id, m.section.toLowerCase(), query);
+                        };
+                        
+                        div.appendChild(snippetDiv);
+                    });
+
+                    itemsGrid.appendChild(div);
                 });
 
-                div.innerHTML = `
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="text-[9px] text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wide">${escapeHTML(item.course_title)}</span>
-                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>
-                    </div>
-                    <h4 class="text-xs font-semibold text-zinc-900 dark:text-zinc-100">${escapeHTML(item.title)}</h4>
-                    ${matchSnippets}
-                `;
-                container.appendChild(div);
+                courseSection.appendChild(itemsGrid);
+                container.appendChild(courseSection);
             });
+
             lucide.createIcons();
         }
 
-        function clickSearchResult(courseId, moduleId, tabId = 'theory') {
+        function clickSearchResult(courseId, moduleId, tabId = 'theory', term = '') {
             document.getElementById("global-search").value = "";
             state.currentTab = tabId;
+            state.pendingScrollTerm = term;
+
+            // Ensure search view is closed and active module view is restored
+            state.activeView = 'module';
+            document.getElementById("search-container").classList.add("hidden");
+            document.getElementById("module-container").classList.remove("hidden");
+
             const targetHash = `#/course/${courseId}/module/${moduleId}`;
             if (window.location.hash === targetHash) {
                 switchTab(tabId);
@@ -1666,10 +1770,11 @@
 
         function resetToHome() {
             state.activeView = 'module';
-            state.currentModuleId = null;
-            document.getElementById("module-container").classList.add("hidden");
             document.getElementById("search-container").classList.add("hidden");
-            fetchCurriculum();
+            document.getElementById("module-container").classList.remove("hidden");
+            
+            const activeModuleId = state.currentModuleId || (state.currentCourseId ? localStorage.getItem(`last_module_${state.currentCourseId}`) : null) || 1;
+            loadModule(parseInt(activeModuleId));
         }
 
         let pomodoroInterval = null;
@@ -1833,6 +1938,11 @@
                     '"': '&quot;'
                 }[tag] || tag)
             );
+        }
+
+        function escapeJS(str) {
+            if (!str) return "";
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
 
         function handleTextSelection(e) {
@@ -2503,6 +2613,68 @@
                     markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, 50);
+        }
+
+        function scrollToTermInContent(term) {
+            if (!term) return;
+            const container = document.getElementById("tab-pane-content");
+            if (!container) return;
+
+            const termLower = term.toLowerCase();
+
+            const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+                acceptNode: (node) => {
+                    const parent = node.parentNode;
+                    if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    if (node.parentElement && node.parentElement.closest('.copy-code-btn')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }, false);
+
+            let node;
+            let targetNode = null;
+            let matchOffset = -1;
+
+            while (node = walk.nextNode()) {
+                const val = node.nodeValue.toLowerCase();
+                const index = val.indexOf(termLower);
+                if (index !== -1) {
+                    targetNode = node;
+                    matchOffset = index;
+                    break;
+                }
+            }
+
+            if (targetNode) {
+                const parent = targetNode.parentNode;
+                if (parent) {
+                    const val = targetNode.nodeValue;
+                    const before = val.substring(0, matchOffset);
+                    const match = val.substring(matchOffset, matchOffset + term.length);
+                    const after = val.substring(matchOffset + term.length);
+
+                    const fragment = document.createDocumentFragment();
+                    if (before) fragment.appendChild(document.createTextNode(before));
+                    
+                    const span = document.createElement('span');
+                    span.className = "search-scroll-target bg-yellow-200/50 dark:bg-yellow-500/20 rounded px-0.5 transition-colors duration-500";
+                    span.textContent = match;
+                    fragment.appendChild(span);
+                    
+                    if (after) fragment.appendChild(document.createTextNode(after));
+
+                    parent.replaceChild(fragment, targetNode);
+                    span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    setTimeout(() => {
+                        span.className = "transition-colors duration-500";
+                    }, 1500);
+                }
+            }
         }
 
         function jumpToNoteContent(courseId, moduleId, sectionId, noteId) {
