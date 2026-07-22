@@ -57,8 +57,7 @@ To maintain an educational standard, each module in a custom curriculum is struc
 ### Generating New Course Content
 To easily generate curriculum files, we have prepared a comprehensive prompt system and reference template inside the `prompts/` directory:
 
-1. **[Course Generator Prompt](prompts/course_generator_prompt.md)**: A modular, complementary LLM system prompt. You can copy the block, append your short instruction (e.g., *"add an ansible playbooks track"*), and execute it to get a complete, valid python configuration file.
-2. **[Sample Course Template](prompts/sample_course_template.py)**: A fully documented reference implementation showing the expected data structures, variable names, and tab structures.
+- **[Course Generator Prompt](prompts/course_generator_prompt.md)**: A modular, complementary LLM system prompt. You can copy the block, append your short instruction (e.g., *"add an ansible playbooks track"*), and execute it to get a complete, valid python configuration file.
 
 Feel free to open a PR!
 
