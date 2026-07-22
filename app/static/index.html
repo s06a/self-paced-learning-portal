@@ -37,7 +37,7 @@
             scrollbar-color: #e4e4e7 transparent;
         }
         .dark *.is-scrolling {
-            scrollbar-color: #3f3f46 transparent;
+            scrollbar-color: #464646 transparent;
         }
 
         ::-webkit-scrollbar {
@@ -56,13 +56,125 @@
             background: #e4e4e7;
         }
         .dark .is-scrolling::-webkit-scrollbar-thumb {
-            background: #3f3f46;
+            background: #464646;
         }
         .is-scrolling::-webkit-scrollbar-thumb:hover {
             background: #d4d4d8;
         }
         .dark .is-scrolling::-webkit-scrollbar-thumb:hover {
-            background: #52525b;
+            background: #5a5a5a;
+        }
+
+        /* 
+         * ==========================================
+         * VISUAL STUDIO MODERN DARK GENERAL OVERRIDES
+         * ==========================================
+         */
+
+        /* Main app dark background */
+        .dark,
+        .dark body,
+        .dark .bg-zinc-950,
+        .dark .dark\:bg-zinc-950 {
+            background-color: #1f1f1f !important;
+            color: #cccccc !important;
+        }
+
+        /* Sidebar, Panels, and secondary backgrounds */
+        .dark aside,
+        .dark .bg-zinc-900,
+        .dark .dark\:bg-zinc-900 {
+            background-color: #181818 !important;
+        }
+
+        /* Cards, stats panels, input containers and interactive components */
+        .dark #course-grid > div,
+        .dark #notes-list-container > div,
+        .dark .bg-white,
+        .dark #pomodoro-stats-panel,
+        .dark .bg-zinc-50,
+        .dark .dark\:bg-zinc-800,
+        .dark .bg-zinc-100,
+        .dark select,
+        .dark input {
+            background-color: #252526 !important;
+        }
+
+        /* Active items, hovered navigation buttons, specific pills/widgets */
+        .dark .bg-zinc-100,
+        .dark .dark\:bg-zinc-800,
+        .dark #pomodoro-widget,
+        .dark #lbl-module-tag,
+        .dark #lbl-read-status {
+            background-color: #2d2d30 !important;
+        }
+
+        /* Main Text color */
+        .dark,
+        .dark .text-zinc-900,
+        .dark .dark\:text-zinc-50,
+        .dark .dark\:text-zinc-100,
+        .dark .dark\:text-zinc-200,
+        .dark .text-zinc-800,
+        .dark .text-zinc-700,
+        .dark .dark\:text-zinc-300 {
+            color: #cccccc !important;
+        }
+
+        /* Muted Text colors (for labels, timestamps, meta elements) */
+        .dark .text-zinc-500,
+        .dark .dark\:text-zinc-400,
+        .dark .text-zinc-400,
+        .dark .dark\:text-zinc-500,
+        .dark .text-zinc-600,
+        .dark .text-zinc-500 {
+            color: #858585 !important;
+        }
+
+        /* Highlighted/Header Text */
+        .dark .text-zinc-950,
+        .dark .dark\:text-zinc-50,
+        .dark h2,
+        .dark h3 {
+            color: #e0e0e0 !important;
+        }
+
+        /* Standardized border color matching VS Studio border */
+        .dark .border-zinc-200,
+        .dark .dark\:border-zinc-800,
+        .dark .dark\:border-zinc-700,
+        .dark .border-zinc-200\/50,
+        .dark .dark\:border-zinc-750,
+        .dark .dark\:border-zinc-850,
+        .dark select,
+        .dark input,
+        .dark button,
+        .dark div,
+        .dark aside {
+            border-color: #2d2d30 !important;
+        }
+
+        /* Hover background for buttons, lists, and inputs */
+        .dark button:hover,
+        .dark select:hover,
+        .dark input:hover,
+        .dark .hover\:bg-zinc-100:hover,
+        .dark .hover\:bg-zinc-50:hover,
+        .dark .dark\:hover\:bg-zinc-800:hover {
+            background-color: #37373d !important;
+        }
+
+        /* Passed tabs, green states */
+        .dark .bg-emerald-50,
+        .dark .dark\:bg-emerald-950\/30 {
+            background-color: rgba(16, 185, 129, 0.1) !important;
+            color: #4ec9b0 !important;
+            border-color: rgba(16, 185, 129, 0.2) !important;
+        }
+        .dark .text-emerald-600,
+        .dark .dark\:text-emerald-400,
+        .dark .text-emerald-700 {
+            color: #4ec9b0 !important;
         }
 
         .markdown-body {
@@ -78,7 +190,7 @@
             color: #09090b;
         }
         .dark .markdown-body h1 {
-            color: #f4f4f5;
+            color: #e0e0e0;
         }
         .markdown-body h2 {
             font-size: 1.6em;
@@ -88,7 +200,7 @@
             color: #18181b;
         }
         .dark .markdown-body h2 {
-            color: #f4f4f5;
+            color: #d4d4d4;
         }
         .markdown-body h3 {
             font-size: 1.4em;
@@ -98,7 +210,7 @@
             color: #18181b;
         }
         .dark .markdown-body h3 {
-            color: #e4e4e7;
+            color: #c8c8c8;
         }
         .markdown-body h4 {
             font-size: 1.2em;
@@ -108,7 +220,7 @@
             color: #27272a;
         }
         .dark .markdown-body h4 {
-            color: #e4e4e7;
+            color: #b3b3b3;
         }
         .markdown-body p {
             margin-bottom: 1rem;
@@ -116,7 +228,7 @@
             color: #3f3f46;
         }
         .dark .markdown-body p {
-            color: #d4d4d8;
+            color: #cccccc;
         }
         .markdown-body ul {
             list-style-type: disc !important;
@@ -136,7 +248,7 @@
             display: list-item !important;
         }
         .dark .markdown-body li {
-            color: #d4d4d8 !important;
+            color: #cccccc !important;
         }
         .markdown-body blockquote {
             border-left: 4px solid #e4e4e7;
@@ -146,8 +258,8 @@
             margin: 1rem 0;
         }
         .dark .markdown-body blockquote {
-            border-left-color: #3f3f46;
-            color: #a1a1aa;
+            border-left-color: #2d2d30;
+            color: #858585;
         }
         .markdown-body hr {
             border: 0;
@@ -155,7 +267,7 @@
             margin: 1.5rem 0;
         }
         .dark .markdown-body hr {
-            border-top-color: #27272a;
+            border-top-color: #2d2d30;
         }
         .markdown-body pre {
             background-color: #272822 !important; /* Monokai dark background */
@@ -171,6 +283,10 @@
             word-wrap: break-word !important;
             overflow-wrap: break-word !important;
             overflow-x: hidden !important;
+        }
+        .dark .markdown-body pre {
+            background-color: #181818 !important;
+            border-color: #2d2d30 !important;
         }
         .markdown-body pre code {
             color: #f8f8f2 !important;
@@ -193,16 +309,16 @@
             font-size: 0.85em !important; /* Scales automatically */
         }
         .dark .markdown-body :not(pre) > code {
-            background-color: #27272a !important;
-            border-color: #3f3f46 !important;
-            color: #f4f4f5 !important;
+            background-color: #2d2d30 !important;
+            border-color: #2d2d30 !important;
+            color: #9cdcfe !important; /* VS Code variable light blue */
         }
         .markdown-body strong {
             font-weight: 700;
             color: #09090b;
         }
         .dark .markdown-body strong {
-            color: #f4f4f5;
+            color: #e0e0e0;
         }
         .markdown-body table {
             border-collapse: collapse;
@@ -215,7 +331,7 @@
             text-align: left;
         }
         .dark .markdown-body th, .dark .markdown-body td {
-            border-color: #27272a;
+            border-color: #2d2d30;
         }
         .markdown-body th {
             background-color: #f4f4f5;
@@ -232,8 +348,8 @@
             font-weight: 500 !important;
         }
         .dark .markdown-body mark.markdown-highlight {
-            background-color: rgba(234, 179, 8, 0.25) !important;
-            color: #fde047 !important;
+            background-color: rgba(234, 179, 8, 0.15) !important;
+            color: #dcdcaa !important;
         }
         mark.note-highlight-only {
             background-color: #fef08a !important;
@@ -245,27 +361,27 @@
             font-weight: inherit !important;
         }
         .dark mark.note-highlight-only {
-            background-color: rgba(234, 179, 8, 0.25) !important;
-            color: #fde047 !important;
+            background-color: rgba(234, 179, 8, 0.15) !important;
+            color: #dcdcaa !important;
         }
         mark.note-highlight-only:hover {
             background-color: #fde047 !important;
         }
         .dark mark.note-highlight-only:hover {
-            background-color: rgba(234, 179, 8, 0.45) !important;
+            background-color: rgba(234, 179, 8, 0.3) !important;
         }
         mark.note-highlight-only mark.note-highlight-only {
             background-color: #fcd34d !important; /* Slightly darker yellow for nested highlights */
             outline: 1px dashed rgba(0, 0, 0, 0.15);
         }
         .dark mark.note-highlight-only mark.note-highlight-only {
-            background-color: rgba(245, 158, 11, 0.3) !important;
+            background-color: rgba(245, 158, 11, 0.2) !important;
         }
         mark.note-highlight-only mark.note-highlight-only:hover {
             background-color: #fbbf24 !important;
         }
         .dark mark.note-highlight-only mark.note-highlight-only:hover {
-            background-color: rgba(245, 158, 11, 0.5) !important;
+            background-color: rgba(245, 158, 11, 0.4) !important;
         }
         #course-grid {
             display: grid !important;
