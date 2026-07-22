@@ -251,7 +251,25 @@ def toggle_progress(course_id: str, module_id: int, section: str = Query(...)):
     conn.commit()
     conn.close()
     return {"course_id": course_id, "module_id": module_id, "section": section, "completed": completed}
+@app.post("/api/courses/{course_id}/reset-progress")
+def reset_course_progress(course_id: str):
+    if course_id not in COURSES:
+        raise HTTPException(status_code=404, detail="Course not found")
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM progress WHERE course_id = ?", (course_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "course_id": course_id}
 
+@app.post("/api/progress/reset-all")
+def reset_all_progress():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM progress")
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
 @app.get("/api/search")
 def search_all(q: str = Query("", min_length=1)):
     # Dynamic reload on each request to make local developer testing instant
