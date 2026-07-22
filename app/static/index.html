@@ -753,10 +753,10 @@
                         </button>
                         
                         <div class="flex gap-1.5">
-                            <button onclick="navigateModule(-1)" id="btn-prev-mod" class="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-md text-[11px] hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold disabled:opacity-50 disabled:dark:opacity-30">
+                            <button onclick="navigatePrevious()" id="btn-prev-mod" class="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-md text-[11px] hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold disabled:opacity-50 disabled:dark:opacity-30">
                                 Previous
                             </button>
-                            <button onclick="navigateModule(1)" id="btn-next-mod" class="px-3 py-1.5 bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md text-[11px] hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold">
+                            <button onclick="navigateNext()" id="btn-next-mod" class="px-3 py-1.5 bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md text-[11px] hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold">
                                 Next
                             </button>
                         </div>
@@ -1536,12 +1536,6 @@
                 switchTab(state.currentTab, preserveScroll);
                 applyFontSize();
 
-                const course = state.courses.find(c => c.id === state.currentCourseId);
-                const totalModulesCount = course ? course.total_modules : 0;
-
-                document.getElementById("btn-prev-mod").disabled = (id <= 1);
-                document.getElementById("btn-next-mod").disabled = (id >= totalModulesCount);
-
                 const curricRes = await fetch(`/api/courses/${state.currentCourseId}/curriculum`);
                 const modules = await curricRes.json();
                 renderCurriculumList(modules);
@@ -1697,6 +1691,7 @@
                 }
                 lucide.createIcons();
             }
+            updateNavigationButtons();
         }
 
         function adjustFontSize(diff) {
@@ -1713,9 +1708,51 @@
             }
         }
 
-        function navigateModule(direction) {
-            const nextId = state.currentModuleId + direction;
-            window.location.hash = `#/course/${state.currentCourseId}/module/${nextId}`;
+        function updateNavigationButtons() {
+            if (!state.courses || state.courses.length === 0) return;
+            const course = state.courses.find(c => c.id === state.currentCourseId);
+            const totalModulesCount = course ? course.total_modules : 0;
+            
+            const isFirstModule = state.currentModuleId <= 1;
+            const isLastModule = state.currentModuleId >= totalModulesCount;
+            
+            const isFirstTab = state.currentTab === 'theory';
+            const isLastTab = state.currentTab === 'insight';
+            
+            const prevBtn = document.getElementById("btn-prev-mod");
+            const nextBtn = document.getElementById("btn-next-mod");
+            if (prevBtn) prevBtn.disabled = (isFirstModule && isFirstTab);
+            if (nextBtn) nextBtn.disabled = (isLastModule && isLastTab);
+        }
+
+        function navigateNext() {
+            const tabs = ['theory', 'commands', 'examples', 'exercise', 'insight'];
+            const currentIdx = tabs.indexOf(state.currentTab);
+            if (currentIdx < tabs.length - 1) {
+                switchTab(tabs[currentIdx + 1]);
+            } else {
+                const course = state.courses.find(c => c.id === state.currentCourseId);
+                const totalModulesCount = course ? course.total_modules : 0;
+                if (state.currentModuleId < totalModulesCount) {
+                    state.currentTab = 'theory';
+                    const nextId = state.currentModuleId + 1;
+                    window.location.hash = `#/course/${state.currentCourseId}/module/${nextId}`;
+                }
+            }
+        }
+
+        function navigatePrevious() {
+            const tabs = ['theory', 'commands', 'examples', 'exercise', 'insight'];
+            const currentIdx = tabs.indexOf(state.currentTab);
+            if (currentIdx > 0) {
+                switchTab(tabs[currentIdx - 1]);
+            } else {
+                if (state.currentModuleId > 1) {
+                    state.currentTab = 'insight';
+                    const prevId = state.currentModuleId - 1;
+                    window.location.hash = `#/course/${state.currentCourseId}/module/${prevId}`;
+                }
+            }
         }
 
         function onGlobalSearchInput(e) {
