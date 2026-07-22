@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
@@ -391,6 +392,37 @@
         }
         .dark .markdown-body th {
             background-color: #18181b;
+        }
+        .markdown-body details {
+            background-color: #f4f4f5;
+            border: 1px solid #e4e4e7;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            transition: all 0.15s ease;
+        }
+        .dark .markdown-body details {
+            background-color: #1e1e1e;
+            border-color: #2d2d30;
+        }
+        .markdown-body summary {
+            font-weight: 700;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            color: #09090b;
+        }
+        .dark .markdown-body summary {
+            color: #e0e0e0;
+        }
+        .markdown-body details[open] {
+            border-color: #d4d4d8;
+        }
+        .dark .markdown-body details[open] {
+            border-color: #4a4a4d;
+        }
+        .markdown-body details > *:not(summary) {
+            margin-top: 0.75rem;
         }
         .markdown-body mark.markdown-highlight {
             background-color: #fef08a !important; /* Soft yellow highlight */
@@ -852,6 +884,15 @@
             handleRouting();
             
             lucide.createIcons();
+            
+            if (window.mermaid) {
+                const isDark = document.documentElement.classList.contains('dark');
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: isDark ? 'dark' : 'default',
+                    securityLevel: 'loose'
+                });
+            }
             
             // Auto-hide scrollbars on scroll inactivity
             document.addEventListener("scroll", (e) => {
@@ -1542,8 +1583,31 @@
                 
                 // Highlight code blocks with highlight.js
                 pane.querySelectorAll('pre code').forEach((block) => {
-                    hljs.highlightElement(block);
+                    if (!block.classList.contains('language-mermaid')) {
+                        hljs.highlightElement(block);
+                    }
                 });
+                
+                // Extract and render Mermaid diagrams
+                const mermaidBlocks = pane.querySelectorAll('pre code.language-mermaid');
+                mermaidBlocks.forEach(block => {
+                    const rawMermaid = block.innerText;
+                    const div = document.createElement('div');
+                    div.className = 'mermaid';
+                    div.textContent = rawMermaid;
+                    const pre = block.closest('pre');
+                    pre.parentNode.replaceChild(div, pre);
+                });
+                
+                if (window.mermaid && mermaidBlocks.length > 0) {
+                    try {
+                        mermaid.run({
+                            nodes: pane.querySelectorAll('.mermaid')
+                        });
+                    } catch (e) {
+                        console.error("Failed to parse Mermaid flowchart", e);
+                    }
+                }
                 
                 if (state.pendingScrollNoteId) {
                     // Do not reset scroll, let scrollToPendingNote smooth scroll directly from current position
@@ -2802,6 +2866,14 @@
             }
             if (typeof filterAndSortCourses === 'function') {
                 filterAndSortCourses();
+            }
+            if (window.mermaid) {
+                const isDark = document.documentElement.classList.contains('dark');
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: isDark ? 'dark' : 'default',
+                    securityLevel: 'loose'
+                });
             }
             if (typeof state !== 'undefined' && state.currentModuleId && state.activeView === 'module') {
                 if (typeof switchTab === 'function') {
