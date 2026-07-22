@@ -515,11 +515,14 @@
         <!-- Controls Container (Search and Sort) -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
             <!-- Search Filter Bar -->
-            <div class="relative flex-1 max-w-sm">
-                <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
+            <div class="relative flex-1 max-w-sm flex items-center">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400"></i>
                 <input type="text" id="course-filter-search" placeholder="Search courses..."
-                       class="w-full pl-9 pr-4 py-1.5 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
-                       oninput="filterAndSortCourses()">
+                       class="w-full pl-9 pr-8 py-1.5 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
+                       oninput="onCourseSearchInput()">
+                <button id="clear-course-search" onclick="clearCourseSearch()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hidden focus:outline-none flex items-center justify-center">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
             </div>
 
             <!-- Sort and Notes Actions -->
@@ -613,11 +616,14 @@
                 </div>
 
                 <!-- Search Input -->
-                <div class="relative shrink-0">
-                    <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
+                <div class="relative shrink-0 flex items-center">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400"></i>
                     <input type="text" id="global-search" placeholder="Search lessons..."
-                           class="w-full pl-9 pr-4 py-1.5 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
-                           onkeyup="handleSearch(event)">
+                           class="w-full pl-9 pr-8 py-1.5 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
+                           onkeyup="onGlobalSearchInput(event)">
+                    <button id="clear-global-search" onclick="clearGlobalSearch()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hidden focus:outline-none flex items-center justify-center">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
                 </div>
 
                 <!-- Curriculum List Navigation -->
@@ -737,11 +743,14 @@
             <!-- Filters & Controls Row -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
                 <!-- Search notes filter -->
-                <div class="relative flex-1 max-w-sm">
-                    <i data-lucide="search" class="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-400"></i>
+                <div class="relative flex-1 max-w-sm flex items-center">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400"></i>
                     <input type="text" id="notes-filter-search" placeholder="Search across all notes..."
-                           class="w-full pl-9 pr-4 py-1.5 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
-                           oninput="renderNotesList()">
+                           class="w-full pl-9 pr-8 py-1.5 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 text-zinc-900 dark:text-zinc-100 transition"
+                           oninput="onNotesSearchInput()">
+                    <button id="clear-notes-search" onclick="clearNotesSearch()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hidden focus:outline-none flex items-center justify-center">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
                 </div>
 
                 <!-- Course select dropdown filter -->
@@ -1164,6 +1173,25 @@
             lucide.createIcons();
         }
 
+        function onCourseSearchInput() {
+            const val = document.getElementById("course-filter-search").value;
+            const btn = document.getElementById("clear-course-search");
+            if (val) {
+                btn.classList.remove("hidden");
+            } else {
+                btn.classList.add("hidden");
+            }
+            filterAndSortCourses();
+        }
+
+        function clearCourseSearch() {
+            const input = document.getElementById("course-filter-search");
+            input.value = "";
+            document.getElementById("clear-course-search").classList.add("hidden");
+            filterAndSortCourses();
+            input.focus();
+        }
+
         function filterAndSortCourses() {
             const query = document.getElementById("course-filter-search")?.value.toLowerCase().trim() || "";
             const sortOpt = document.getElementById("course-sort-select")?.value || "name";
@@ -1219,6 +1247,8 @@
                 document.getElementById("course-selection-screen").classList.remove("hidden");
                 const searchInput = document.getElementById("global-search");
                 if (searchInput) searchInput.value = "";
+                const clearBtn = document.getElementById("clear-global-search");
+                if (clearBtn) clearBtn.classList.add("hidden");
                 
                 await fetchCourses();
             } 
@@ -1560,6 +1590,25 @@
             window.location.hash = `#/course/${state.currentCourseId}/module/${nextId}`;
         }
 
+        function onGlobalSearchInput(e) {
+            const val = document.getElementById("global-search").value;
+            const btn = document.getElementById("clear-global-search");
+            if (val) {
+                btn.classList.remove("hidden");
+            } else {
+                btn.classList.add("hidden");
+            }
+            handleSearch(e);
+        }
+
+        function clearGlobalSearch() {
+            const input = document.getElementById("global-search");
+            input.value = "";
+            document.getElementById("clear-global-search").classList.add("hidden");
+            resetToHome();
+            input.focus();
+        }
+
         async function handleSearch(e) {
             const val = e.target.value.trim();
             if (val.length < 2) {
@@ -1720,6 +1769,8 @@
 
         function clickSearchResult(courseId, moduleId, tabId = 'theory', term = '') {
             document.getElementById("global-search").value = "";
+            const clearBtn = document.getElementById("clear-global-search");
+            if (clearBtn) clearBtn.classList.add("hidden");
             state.currentTab = tabId;
             state.pendingScrollTerm = term;
 
@@ -2522,6 +2573,25 @@
                     </div>
                 </div>
             `;
+        }
+
+        function onNotesSearchInput() {
+            const val = document.getElementById("notes-filter-search").value;
+            const btn = document.getElementById("clear-notes-search");
+            if (val) {
+                btn.classList.remove("hidden");
+            } else {
+                btn.classList.add("hidden");
+            }
+            renderNotesList();
+        }
+
+        function clearNotesSearch() {
+            const input = document.getElementById("notes-filter-search");
+            input.value = "";
+            document.getElementById("clear-notes-search").classList.add("hidden");
+            renderNotesList();
+            input.focus();
         }
 
         function renderNotesList() {
